@@ -15,6 +15,7 @@ interface TreatmentState {
   add: (t: Treatment) => Promise<void>
   remove: (id: string) => Promise<void>
   updateDoseStatus: (id: string, status: 'taken' | 'skipped' | 'cancelled') => Promise<void>
+  removeDoseLog: (id: string) => Promise<void>
 }
 
 export const useTreatmentStore = create<TreatmentState>((set) => ({
@@ -35,6 +36,11 @@ export const useTreatmentStore = create<TreatmentState>((set) => ({
   remove: async (id) => {
     await deleteTreatment(id)
     set((s) => ({ treatments: s.treatments.filter((t) => t.id !== id) }))
+  },
+  removeDoseLog: async (id) => {
+    const { deleteDoseLog } = await import('../db')
+    await deleteDoseLog(id)
+    set((s) => ({ doseLogs: s.doseLogs.filter((l) => l.id !== id) }))
   },
   updateDoseStatus: async (id, status) => {
     const { updateDoseLogStatus } = await import('../db')

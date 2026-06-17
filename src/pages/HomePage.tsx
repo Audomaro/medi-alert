@@ -13,7 +13,7 @@ import type { DoseWithDetails } from '../types'
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { treatments, doseLogs, loadTreatments, loadDoseLogs, updateDoseStatus } = useTreatmentStore()
+  const { treatments, doseLogs, loadTreatments, loadDoseLogs, updateDoseStatus, removeDoseLog } = useTreatmentStore()
   const { medications, load: loadMeds } = useMedicationStore()
   const [selectedDate, setSelectedDate] = useState(todayISO())
 
@@ -116,6 +116,7 @@ export function HomePage() {
             onMarkTaken={() => updateDoseStatus(dose.id, 'taken')}
             onMarkSkipped={() => updateDoseStatus(dose.id, 'skipped')}
             onMarkCancelled={() => updateDoseStatus(dose.id, 'cancelled')}
+            onDelete={() => removeDoseLog(dose.id)}
           />
         ))}
       </div>

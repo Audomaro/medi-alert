@@ -47,6 +47,7 @@ export interface DoseLog {
   medicationId: string
   scheduledDate: string
   scheduledTime: string
+  doseLabel: string
   status: DoseStatus
   takenAt?: string
   doseValue: number

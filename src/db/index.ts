@@ -85,6 +85,11 @@ export async function saveDoseLog(log: DoseLog): Promise<void> {
   await db.put('dose_logs', log)
 }
 
+export async function deleteDoseLog(id: string): Promise<void> {
+  const db = await getDB()
+  await db.delete('dose_logs', id)
+}
+
 export async function updateDoseLogStatus(id: string, status: 'taken' | 'skipped' | 'cancelled'): Promise<void> {
   const db = await getDB()
   const tx = db.transaction('dose_logs', 'readwrite')

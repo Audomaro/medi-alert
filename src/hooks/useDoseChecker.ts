@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTreatmentStore } from '../stores/treatmentStore'
 import { getDoseLogsByDate, saveDoseLog } from '../db'
 import { generateId } from '../utils/id'
@@ -6,7 +6,7 @@ import { todayISO } from '../utils/date'
 import type { Treatment } from '../types'
 
 function generateDoseLogsForTreatment(t: Treatment, date: string) {
-  const logs: { treatmentId: string; medicationId: string; scheduledDate: string; scheduledTime: string; doseValue: number; doseUnit: string }[] = []
+  const logs: { treatmentId: string; medicationId: string; scheduledDate: string; scheduledTime: string; doseLabel: string; doseValue: number; doseUnit: string }[] = []
   const dateObj = new Date(date + 'T12:00:00')
 
   if (date < t.startDate) return logs
@@ -48,6 +48,7 @@ function generateDoseLogsForTreatment(t: Treatment, date: string) {
         medicationId: t.medicationId,
         scheduledDate: date,
         scheduledTime: dose.time,
+        doseLabel: dose.label,
         doseValue: dose.doseValue,
         doseUnit: dose.doseUnit,
       })
@@ -57,22 +58,32 @@ function generateDoseLogsForTreatment(t: Treatment, date: string) {
 }
 
 export function useDoseChecker() {
-  const { treatments } = useTreatmentStore()
+  const { treatments, loadDoseLogs } = useTreatmentStore()
+  const checking = useRef(false)
 
   useEffect(() => {
     if (treatments.length === 0) return
     const check = async () => {
-      const date = todayISO()
-      const existing = await getDoseLogsByDate(date)
-      const existingKeys = new Set(existing.map((l) => `${l.treatmentId}|${l.scheduledTime}`))
-      for (const t of treatments) {
-        const newLogs = generateDoseLogsForTreatment(t, date)
-        for (const log of newLogs) {
-          const key = `${log.treatmentId}|${log.scheduledTime}`
-          if (!existingKeys.has(key)) {
-            await saveDoseLog({ ...log, id: generateId(), status: 'pending', scheduledDate: date })
+      if (checking.current) return
+      checking.current = true
+      try {
+        const date = todayISO()
+        const existing = await getDoseLogsByDate(date)
+        const existingKeys = new Set(existing.map((l) => `${l.treatmentId}|${l.doseLabel}`))
+        let added = false
+        for (const t of treatments) {
+          const newLogs = generateDoseLogsForTreatment(t, date)
+          for (const log of newLogs) {
+            const key = `${log.treatmentId}|${log.doseLabel}`
+            if (!existingKeys.has(key)) {
+              await saveDoseLog({ ...log, id: generateId(), status: 'pending' })
+              added = true
+            }
           }
         }
+        if (added) loadDoseLogs(date)
+      } finally {
+        checking.current = false
       }
     }
     check()

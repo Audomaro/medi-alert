@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Pill, FlaskRound, Syringe, Wind, Droplets, MoreVertical, Check, X, Ban } from 'lucide-react'
+import { Pill, FlaskRound, Syringe, Wind, Droplets, MoreVertical, Check, X, Ban, Trash2 } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { formatTime24to12 } from '../utils/date'
 import type { Presentation, DoseStatus } from '../types'
@@ -21,6 +21,7 @@ interface Props {
   onMarkTaken: () => void
   onMarkSkipped: () => void
   onMarkCancelled: () => void
+  onDelete: () => void
 }
 
 const menuActions = [
@@ -29,7 +30,9 @@ const menuActions = [
   { key: 'cancelled', label: 'Cancelar dosis', icon: Ban, color: 'text-gray-500' },
 ] as const
 
-export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, status, color, onMarkTaken, onMarkSkipped, onMarkCancelled }: Props) {
+const divider = 'divider'
+
+export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, status, color, onMarkTaken, onMarkSkipped, onMarkCancelled, onDelete }: Props) {
   const Icon = iconMap[presentation] || Pill
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -48,6 +51,7 @@ export function DoseCard({ time, medicationName, doseValue, doseUnit, presentati
     taken: onMarkTaken,
     skipped: onMarkSkipped,
     cancelled: onMarkCancelled,
+    delete: onDelete,
   }
 
   const isPending = status === 'pending'
@@ -76,30 +80,41 @@ export function DoseCard({ time, medicationName, doseValue, doseUnit, presentati
         </div>
         <div className="flex flex-col items-end gap-2 relative">
           <StatusBadge status={status} />
-          {isPending && (
-            <div ref={menuRef} className="relative">
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-              >
-                <MoreVertical className="w-4 h-4 text-text/60 dark:text-gray-400" />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-100 dark:border-gray-600 py-1 min-w-44 z-50">
-                  {menuActions.map((action) => (
-                    <button
-                      key={action.key}
-                      onClick={() => { handlers[action.key](); setMenuOpen(false) }}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      <action.icon className={`w-4 h-4 ${action.color}`} />
-                      <span className="text-text dark:text-white">{action.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <div ref={menuRef} className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+            >
+              <MoreVertical className="w-4 h-4 text-text/60 dark:text-gray-400" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-100 dark:border-gray-600 py-1 min-w-44 z-50">
+                {isPending && menuActions.map((action) => (
+                  <button
+                    key={action.key}
+                    onClick={() => { handlers[action.key](); setMenuOpen(false) }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <action.icon className={`w-4 h-4 ${action.color}`} />
+                    <span className="text-text dark:text-white">{action.label}</span>
+                  </button>
+                ))}
+                {!isPending && (
+                  <div className="px-4 py-2 text-xs text-gray-400 dark:text-gray-500">
+                    {status === 'taken' ? 'Dosis completada' : status === 'skipped' ? 'Dosis saltada' : 'Dosis cancelada'}
+                  </div>
+                )}
+                <hr className="border-gray-100 dark:border-gray-600 my-1" />
+                <button
+                  onClick={() => { handlers.delete(); setMenuOpen(false) }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                  <span className="text-red-600 dark:text-red-400">Eliminar dosis</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
