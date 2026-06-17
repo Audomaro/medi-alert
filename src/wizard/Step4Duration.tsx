@@ -1,4 +1,5 @@
 import { ArrowLeft, Check } from 'lucide-react'
+import { todayISO } from '../utils/date'
 
 interface Props {
   startDate: string; setStartDate: (v: string) => void
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function Step4Duration({ startDate, setStartDate, endDate, setEndDate, indefinite, setIndefinite, onPrev, onSave }: Props) {
+  const today = todayISO()
   return (
     <div>
       <div className="flex items-center gap-3 mb-4">
@@ -17,7 +19,10 @@ export function Step4Duration({ startDate, setStartDate, endDate, setEndDate, in
       <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col gap-4">
         <div>
           <label className="text-xs font-medium mb-1.5 block">Fecha de inicio</label>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+          <input type="date" value={startDate} min={today} onChange={(e) => {
+            setStartDate(e.target.value)
+            if (endDate && e.target.value > endDate) setEndDate('')
+          }}
             className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
         </div>
         <div>
@@ -33,7 +38,7 @@ export function Step4Duration({ startDate, setStartDate, endDate, setEndDate, in
             </label>
           </div>
           {!indefinite && (
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+            <input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)}
               className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
           )}
         </div>
