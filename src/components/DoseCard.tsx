@@ -1,4 +1,5 @@
-import { Pill, FlaskRound, Syringe, Wind, Droplets } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Pill, FlaskRound, Syringe, Wind, Droplets, MoreVertical, Check, X, Ban } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { formatTime24to12 } from '../utils/date'
 import type { Presentation, DoseStatus } from '../types'
@@ -17,12 +18,40 @@ interface Props {
   status: DoseStatus
   icon?: string
   color?: string
-  onMark: () => void
+  onMarkTaken: () => void
+  onMarkSkipped: () => void
+  onMarkCancelled: () => void
 }
 
-export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, status, color, onMark }: Props) {
+const menuActions = [
+  { key: 'taken', label: 'Marcar tomada', icon: Check, color: 'text-success-text' },
+  { key: 'skipped', label: 'Saltar dosis', icon: X, color: 'text-danger-text' },
+  { key: 'cancelled', label: 'Cancelar dosis', icon: Ban, color: 'text-gray-500' },
+] as const
+
+export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, status, color, onMarkTaken, onMarkSkipped, onMarkCancelled }: Props) {
   const Icon = iconMap[presentation] || Pill
-  const isDone = status !== 'pending'
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    if (menuOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [menuOpen])
+
+  const handlers: Record<string, () => void> = {
+    taken: onMarkTaken,
+    skipped: onMarkSkipped,
+    cancelled: onMarkCancelled,
+  }
+
+  const isPending = status === 'pending'
+
   return (
     <div className="rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
       <div className="flex justify-between items-start">
@@ -45,19 +74,32 @@ export function DoseCard({ time, medicationName, doseValue, doseUnit, presentati
             </div>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-end gap-2 relative">
           <StatusBadge status={status} />
-          <button
-            onClick={onMark}
-            disabled={isDone}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-              isDone
-                ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                : 'bg-primary text-white hover:bg-primary/90 active:scale-95'
-            }`}
-          >
-            {isDone ? 'Completada' : 'Marcar dosis'}
-          </button>
+          {isPending && (
+            <div ref={menuRef} className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+              >
+                <MoreVertical className="w-4 h-4 text-text/60 dark:text-gray-400" />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-100 dark:border-gray-600 py-1 min-w-44 z-50">
+                  {menuActions.map((action) => (
+                    <button
+                      key={action.key}
+                      onClick={() => { handlers[action.key](); setMenuOpen(false) }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      <action.icon className={`w-4 h-4 ${action.color}`} />
+                      <span className="text-text dark:text-white">{action.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

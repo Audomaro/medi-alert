@@ -15,7 +15,7 @@ export function HomePage() {
   const navigate = useNavigate()
   const { treatments, doseLogs, loadTreatments, loadDoseLogs, updateDoseStatus } = useTreatmentStore()
   const { medications, load: loadMeds } = useMedicationStore()
-  const [today] = useState(todayISO())
+  const [selectedDate, setSelectedDate] = useState(todayISO())
 
   useEffect(() => {
     loadTreatments()
@@ -23,8 +23,8 @@ export function HomePage() {
   }, [])
 
   useEffect(() => {
-    loadDoseLogs(todayISO())
-  }, [treatments.length])
+    loadDoseLogs(selectedDate)
+  }, [selectedDate, treatments.length])
 
   useDoseChecker()
 
@@ -55,6 +55,29 @@ export function HomePage() {
     }
   }, [pendingCount])
 
+  useEffect(() => {
+    if (treatments.length === 0 || doseLogs.length === 0) return
+    const checkUpcoming = setInterval(() => {
+      const now = new Date()
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+      const pendingDoses = doseLogs.filter((l) =>
+        l.status === 'pending' &&
+        l.scheduledDate === selectedDate &&
+        l.scheduledTime === currentTime
+      )
+      for (const dose of pendingDoses) {
+        const med = medications.find((m) => m.id === dose.medicationId)
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Medi-alert', {
+            body: `Es hora de tomar ${med?.name || 'tu medicamento'}`,
+            icon: '/icons/192.png',
+          })
+        }
+      }
+    }, 30000)
+    return () => clearInterval(checkUpcoming)
+  }, [treatments, doseLogs, medications, selectedDate])
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -67,17 +90,17 @@ export function HomePage() {
         </div>
       </div>
 
-      <WeekCalendar />
+      <WeekCalendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
       <p className="text-center text-sm font-medium text-gray-500 dark:text-gray-400 mt-2 mb-5">
-        {formatDateDisplay(today)}
+        {formatDateDisplay(selectedDate)}
       </p>
 
       <div className="flex flex-col gap-3">
         {sortedDoses.length === 0 && (
           <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-            <p className="text-lg font-medium mb-1">Sin dosis hoy</p>
-            <p className="text-sm">Agrega un tratamiento para empezar</p>
+            <p className="text-lg font-medium mb-1">Sin dosis este día</p>
+            <p className="text-sm">Selecciona otro día o agrega un tratamiento</p>
           </div>
         )}
         {sortedDoses.map((dose) => (
@@ -90,7 +113,9 @@ export function HomePage() {
             presentation={dose.presentation}
             status={dose.status}
             color={dose.medicationColor}
-            onMark={() => updateDoseStatus(dose.id, 'taken')}
+            onMarkTaken={() => updateDoseStatus(dose.id, 'taken')}
+            onMarkSkipped={() => updateDoseStatus(dose.id, 'skipped')}
+            onMarkCancelled={() => updateDoseStatus(dose.id, 'cancelled')}
           />
         ))}
       </div>
