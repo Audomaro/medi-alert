@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Bell, Palette, Info, Trash2 } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
 import { useMedicationStore } from '../stores/medicationStore'
@@ -11,7 +10,6 @@ export function MorePage() {
   const { dark, toggle } = useThemeStore()
   const { load: loadMeds } = useMedicationStore()
   const { loadDosesForDate } = useDoseScheduleStore()
-  const navigate = useNavigate()
   const [showConfirm, setShowConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 

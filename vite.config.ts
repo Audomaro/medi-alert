@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/medi-alert/' : '/',
   plugins: [
     react(),
     tailwindcss(),
@@ -20,11 +21,11 @@ export default defineConfig(({ mode }) => ({
         theme_color: '#0891B2',
         background_color: '#F0FDFA',
         display: 'standalone',
-        start_url: '/',
-        scope: '/',
+        start_url: '/medi-alert/',
+        scope: '/medi-alert/',
         icons: [
-          { src: '/icons/192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/medi-alert/icons/192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/medi-alert/icons/512.png', sizes: '512x512', type: 'image/png' },
         ],
       },
     }),

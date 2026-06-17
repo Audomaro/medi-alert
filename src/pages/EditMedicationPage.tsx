@@ -53,8 +53,10 @@ export function EditMedicationPage() {
 
   const handleSave = async () => {
     if (!name.trim() || !id) return
+    const existing = medications.find((m) => m.id === id)
+    if (!existing) return
     await update({
-      id,
+      ...existing,
       name: name.trim(),
       presentation,
       doseValue: dv,

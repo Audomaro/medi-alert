@@ -10,7 +10,7 @@ import { todayISO, formatDateDisplay } from '../utils/date'
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { doses, loadDosesForDate, updateDoseStatus } = useDoseScheduleStore()
+  const { doses, loadDosesForDate, updateDoseStatus, hideDosePermanently } = useDoseScheduleStore()
   const [selectedDate, setSelectedDate] = useState(todayISO())
 
   useEffect(() => {
@@ -34,6 +34,20 @@ export function HomePage() {
   }, [pendingCount])
 
   useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type !== 'DOSE_ACTION') return
+      const { action, doseId, scheduleId, medicationId, scheduledDate, scheduledTime, doseLabel } = event.data
+      if (action === 'delete') {
+        hideDosePermanently(doseId)
+      } else {
+        updateDoseStatus(doseId, scheduleId, medicationId, scheduledDate, scheduledTime, doseLabel, action)
+      }
+    }
+    navigator.serviceWorker.addEventListener('message', handler)
+    return () => navigator.serviceWorker.removeEventListener('message', handler)
+  }, [])
+
+  useEffect(() => {
     if (doses.length === 0) return
     const checkUpcoming = setInterval(() => {
       const now = new Date()
@@ -45,9 +59,26 @@ export function HomePage() {
       )
       for (const dose of pendingDoses) {
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Medi-alert', {
-            body: `Es hora de tomar ${dose.medicationName || 'tu medicamento'}`,
-            icon: '/icons/192.png',
+          navigator.serviceWorker.ready.then((reg) => {
+            reg.showNotification('Medi-alert', {
+              body: `Es hora de tomar ${dose.medicationName || 'tu medicamento'}`,
+              icon: '/icons/192.png',
+              tag: dose.id,
+              actions: [
+                { action: 'taken', title: 'Tomar' },
+                { action: 'skipped', title: 'Saltar' },
+                { action: 'cancelled', title: 'Cancelar' },
+                { action: 'delete', title: 'Eliminar' },
+              ],
+              data: {
+                doseId: dose.id,
+                scheduleId: dose.scheduleId,
+                medicationId: dose.medicationId,
+                scheduledDate: dose.scheduledDate,
+                scheduledTime: dose.scheduledTime,
+                doseLabel: dose.doseLabel,
+              },
+            })
           })
         }
       }
@@ -91,10 +122,10 @@ export function HomePage() {
             icon={dose.medicationIcon}
             status={dose.status}
             color={dose.medicationColor}
-            scheduleId={dose.scheduleId}
             onMarkTaken={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'taken')}
             onMarkSkipped={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'skipped')}
             onMarkCancelled={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'cancelled')}
+            onDelete={() => hideDosePermanently(dose.id)}
           />
         ))}
       </div>

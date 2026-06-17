@@ -27,13 +27,16 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
+  const action = event.action
+  const data = event.notification.data || {}
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       if (clients.length > 0) {
-        clients[0].focus()
-      } else {
-        self.clients.openWindow('/')
+        clients[0].postMessage({ type: 'DOSE_ACTION', action, ...data })
+        return clients[0].focus()
       }
+      return self.clients.openWindow('/')
     }),
   )
 })

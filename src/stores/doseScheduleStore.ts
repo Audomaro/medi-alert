@@ -7,8 +7,11 @@ import {
   getActiveSchedulesForDate,
   getDoseActionsByDate,
   saveDoseAction,
+  deleteDoseAction,
   deleteDoseActionsBySchedule,
   getAllMedications,
+  saveHiddenDoseInstance,
+  getHiddenDoseInstanceIds,
 } from '../db'
 
 function shouldGenerateForDate(s: DoseSchedule, dateStr: string): boolean {
@@ -59,6 +62,7 @@ interface DoseScheduleState {
     doseLabel: string,
     status: 'taken' | 'skipped' | 'cancelled'
   ) => Promise<void>
+  hideDosePermanently: (instanceId: string) => Promise<void>
 }
 
 export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
@@ -69,10 +73,11 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
     set({ doseSchedules: schedules })
   },
   loadDosesForDate: async (date) => {
-    const [schedules, actions, medications] = await Promise.all([
+    const [schedules, actions, medications, hiddenIds] = await Promise.all([
       getActiveSchedulesForDate(date),
       getDoseActionsByDate(date),
       getAllMedications(),
+      getHiddenDoseInstanceIds(),
     ])
 
     const actionMap = new Map<string, DoseAction>()
@@ -88,6 +93,7 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
       const med = medMap.get(s.medicationId)
       for (const dose of s.doses) {
         const instanceId = generateInstanceId(s.id, date, dose.time, dose.label)
+        if (hiddenIds.has(instanceId)) continue
         const action = actionMap.get(instanceId)
         result.push({
           id: instanceId,
@@ -144,6 +150,15 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
           ? { ...d, status, takenAt: action.takenAt }
           : d
       ),
+    }))
+  },
+  hideDosePermanently: async (instanceId) => {
+    await Promise.all([
+      saveHiddenDoseInstance(instanceId),
+      deleteDoseAction(instanceId),
+    ])
+    set((state) => ({
+      doses: state.doses.filter((d) => d.id !== instanceId),
     }))
   },
 }))

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Pill, FlaskRound, Syringe, Wind, Droplets, Heart, Bone, Eye, Ear, Stethoscope, MoreVertical, Check, X, Ban, Pencil } from 'lucide-react'
+import { Pill, FlaskRound, Syringe, Wind, Droplets, Heart, Bone, Eye, Ear, Stethoscope, MoreVertical, Check, X, Ban, Trash2 } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { formatTime24to12 } from '../utils/date'
 import type { Presentation, DoseStatus } from '../types'
@@ -25,10 +24,10 @@ interface Props {
   status: DoseStatus
   icon?: string
   color?: string
-  scheduleId: string
   onMarkTaken: () => void
   onMarkSkipped: () => void
   onMarkCancelled: () => void
+  onDelete: () => void
 }
 
 const menuActions = [
@@ -37,8 +36,7 @@ const menuActions = [
   { key: 'cancelled', label: 'Cancelar dosis', icon: Ban, color: 'text-gray-500' },
 ] as const
 
-export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, icon, status, color, scheduleId, onMarkTaken, onMarkSkipped, onMarkCancelled }: Props) {
-  const navigate = useNavigate()
+export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, icon, status, color, onMarkTaken, onMarkSkipped, onMarkCancelled, onDelete }: Props) {
   const Icon = (icon && medicationIconMap[icon]) || iconMap[presentation] || Pill
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -109,12 +107,13 @@ export function DoseCard({ time, medicationName, doseValue, doseUnit, presentati
                     {status === 'taken' ? 'Dosis completada' : status === 'skipped' ? 'Dosis saltada' : 'Dosis cancelada'}
                   </div>
                 )}
+                <hr className="border-gray-100 dark:border-gray-600" />
                 <button
-                  onClick={() => { navigate(`/dose/edit/${scheduleId}`); setMenuOpen(false) }}
+                  onClick={() => { onDelete(); setMenuOpen(false) }}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
-                  <Pencil className="w-4 h-4 text-primary" />
-                  <span className="text-text dark:text-white">Editar medicamento</span>
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                  <span className="text-red-600 dark:text-red-400">Eliminar dosis</span>
                 </button>
               </div>
             )}

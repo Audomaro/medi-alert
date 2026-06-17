@@ -13,7 +13,7 @@ Medication reminder PWA with offline support, dose scheduling, and day-by-day tr
 
 ## Database Structure
 
-3 object stores in IndexedDB:
+4 object stores in IndexedDB:
 
 ```mermaid
 erDiagram
@@ -65,6 +65,7 @@ erDiagram
 | `medications` | Medication catalog (name, presentation, dose, icon, color) |
 | `dose_schedules` | Dose plans linking a medication to a frequency + time range |
 | `dose_actions` | User interactions with individual doses (taken/skipped/cancelled) |
+| `hidden_dose_instances` | Permanently deleted dose instance IDs (hidden from computation) |
 
 ### Key Design Decisions
 

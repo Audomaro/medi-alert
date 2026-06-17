@@ -2,7 +2,7 @@ import { openDB, type IDBPDatabase } from 'idb'
 import type { Medication, DoseSchedule, DoseAction } from '../types'
 
 const DB_NAME = 'medi-alert'
-const DB_VERSION = 5
+const DB_VERSION = 6
 
 let dbPromise: Promise<IDBPDatabase> | null = null
 
@@ -83,6 +83,9 @@ function getDB() {
               await schedStore.put(s)
             }
           }
+        }
+        if (_oldVersion < 6) {
+          db.createObjectStore('hidden_dose_instances', { keyPath: 'id' })
         }
       },
     })
@@ -167,4 +170,15 @@ export async function getActiveSchedulesForDate(date: string): Promise<DoseSched
   const db = await getDB()
   const all = await db.getAll('dose_schedules')
   return all.filter((s) => s.active && s.startDate <= date && s.endDate >= date)
+}
+
+export async function saveHiddenDoseInstance(id: string): Promise<void> {
+  const db = await getDB()
+  await db.put('hidden_dose_instances', { id })
+}
+
+export async function getHiddenDoseInstanceIds(): Promise<Set<string>> {
+  const db = await getDB()
+  const all = await db.getAll('hidden_dose_instances')
+  return new Set(all.map((h) => h.id))
 }
