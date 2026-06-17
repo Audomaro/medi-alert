@@ -13,6 +13,7 @@ interface TreatmentState {
   loadTreatments: () => Promise<void>
   loadDoseLogs: (date: string) => Promise<void>
   add: (t: Treatment) => Promise<void>
+  update: (t: Treatment) => Promise<void>
   remove: (id: string) => Promise<void>
   updateDoseStatus: (id: string, status: 'taken' | 'skipped' | 'cancelled') => Promise<void>
   removeDoseLog: (id: string) => Promise<void>
@@ -32,6 +33,10 @@ export const useTreatmentStore = create<TreatmentState>((set) => ({
   add: async (t) => {
     await saveTreatment(t)
     set((s) => ({ treatments: [...s.treatments, t] }))
+  },
+  update: async (t) => {
+    await saveTreatment(t)
+    set((s) => ({ treatments: s.treatments.map((x) => (x.id === t.id ? t : x)) }))
   },
   remove: async (id) => {
     await deleteTreatment(id)

@@ -113,6 +113,7 @@ export function HomePage() {
             presentation={dose.presentation}
             status={dose.status}
             color={dose.medicationColor}
+            treatmentId={dose.treatmentId}
             onMarkTaken={() => updateDoseStatus(dose.id, 'taken')}
             onMarkSkipped={() => updateDoseStatus(dose.id, 'skipped')}
             onMarkCancelled={() => updateDoseStatus(dose.id, 'cancelled')}

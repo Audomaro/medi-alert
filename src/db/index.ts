@@ -85,6 +85,27 @@ export async function saveDoseLog(log: DoseLog): Promise<void> {
   await db.put('dose_logs', log)
 }
 
+export async function deleteAllData(): Promise<void> {
+  const db = await getDB()
+  const tx = db.transaction(['medications', 'treatments', 'dose_logs'], 'readwrite')
+  await Promise.all([
+    tx.objectStore('medications').clear(),
+    tx.objectStore('treatments').clear(),
+    tx.objectStore('dose_logs').clear(),
+  ])
+  await tx.done
+}
+
+export async function deleteDoseLogsByTreatment(treatmentId: string): Promise<void> {
+  const db = await getDB()
+  const logs = await db.getAllFromIndex('dose_logs', 'treatment', treatmentId)
+  const tx = db.transaction('dose_logs', 'readwrite')
+  for (const log of logs) {
+    tx.store.delete(log.id)
+  }
+  await tx.done
+}
+
 export async function deleteDoseLog(id: string): Promise<void> {
   const db = await getDB()
   await db.delete('dose_logs', id)

@@ -16,6 +16,7 @@ export default function App() {
           <Route path="/meds" element={<MedicationsPage />} />
           <Route path="/more" element={<MorePage />} />
           <Route path="/treatment/new" element={<TreatmentWizard />} />
+          <Route path="/treatment/edit/:id" element={<TreatmentWizard />} />
           <Route path="/medication/new" element={<MedicationWizard />} />
           <Route path="/medication/edit/:id" element={<EditMedicationPage />} />
         </Route>

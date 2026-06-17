@@ -1,8 +1,30 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bell, Palette, Info, Trash2 } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
+import { useMedicationStore } from '../stores/medicationStore'
+import { useTreatmentStore } from '../stores/treatmentStore'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export function MorePage() {
   const { dark, toggle } = useThemeStore()
+  const { load: loadMeds } = useMedicationStore()
+  const { loadTreatments, loadDoseLogs } = useTreatmentStore()
+  const navigate = useNavigate()
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDeleteAll = async () => {
+    setDeleting(true)
+    try {
+      const { deleteAllData } = await import('../db')
+      await deleteAllData()
+      await Promise.all([loadMeds(), loadTreatments(), loadDoseLogs(new Date().toISOString().split('T')[0])])
+      setShowConfirm(false)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <div>
@@ -45,7 +67,7 @@ export function MorePage() {
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] mt-2">
-          <button className="w-full flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-2xl">
+          <button onClick={() => setShowConfirm(true)} className="w-full flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-2xl">
             <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
               <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
@@ -56,6 +78,16 @@ export function MorePage() {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showConfirm}
+        title="Eliminar todos los datos"
+        message="Esta acción eliminará todos los medicamentos, tratamientos e historial de dosis. Esta acción no se puede deshacer."
+        confirmLabel={deleting ? 'Eliminando...' : 'Sí, eliminar todo'}
+        danger
+        onConfirm={handleDeleteAll}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   )
 }

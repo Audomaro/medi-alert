@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { Pill, FlaskRound, Syringe, Wind, Droplets, MoreVertical, Check, X, Ban, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Pill, FlaskRound, Syringe, Wind, Droplets, MoreVertical, Check, X, Ban, Trash2, Pencil } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { formatTime24to12 } from '../utils/date'
 import type { Presentation, DoseStatus } from '../types'
@@ -18,6 +19,7 @@ interface Props {
   status: DoseStatus
   icon?: string
   color?: string
+  treatmentId: string
   onMarkTaken: () => void
   onMarkSkipped: () => void
   onMarkCancelled: () => void
@@ -32,7 +34,8 @@ const menuActions = [
 
 const divider = 'divider'
 
-export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, status, color, onMarkTaken, onMarkSkipped, onMarkCancelled, onDelete }: Props) {
+export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, status, color, treatmentId, onMarkTaken, onMarkSkipped, onMarkCancelled, onDelete }: Props) {
+  const navigate = useNavigate()
   const Icon = iconMap[presentation] || Pill
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -104,6 +107,13 @@ export function DoseCard({ time, medicationName, doseValue, doseUnit, presentati
                     {status === 'taken' ? 'Dosis completada' : status === 'skipped' ? 'Dosis saltada' : 'Dosis cancelada'}
                   </div>
                 )}
+                <button
+                  onClick={() => { navigate(`/treatment/edit/${treatmentId}`); setMenuOpen(false) }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <Pencil className="w-4 h-4 text-primary" />
+                  <span className="text-text dark:text-white">Editar tratamiento</span>
+                </button>
                 <hr className="border-gray-100 dark:border-gray-600 my-1" />
                 <button
                   onClick={() => { handlers.delete(); setMenuOpen(false) }}
