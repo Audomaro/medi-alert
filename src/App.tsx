@@ -5,6 +5,7 @@ import { MedicationsPage } from './pages/MedicationsPage'
 import { MorePage } from './pages/MorePage'
 import { TreatmentWizard } from './wizard/TreatmentWizard'
 import { MedicationWizard } from './wizard/MedicationWizard'
+import { EditMedicationPage } from './pages/EditMedicationPage'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/more" element={<MorePage />} />
           <Route path="/treatment/new" element={<TreatmentWizard />} />
           <Route path="/medication/new" element={<MedicationWizard />} />
+          <Route path="/medication/edit/:id" element={<EditMedicationPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

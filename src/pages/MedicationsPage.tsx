@@ -57,7 +57,7 @@ export function MedicationsPage() {
                 <div className="font-semibold text-text dark:text-white">{m.name}</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">{m.doseValue} {m.doseUnit} · {labels[m.presentation]}</div>
               </div>
-              <Pencil className="w-4 h-4 text-primary cursor-pointer" />
+              <Pencil className="w-4 h-4 text-primary cursor-pointer" onClick={() => navigate(`/medication/edit/${m.id}`)} />
             </div>
           )
         })}

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check } from 'lucide-react'
+import { ArrowLeft, Check, Pill, FlaskRound, Syringe, Wind, Droplets, Heart, Bone, Eye, Ear, Stethoscope } from 'lucide-react'
 import { useMedicationStore } from '../stores/medicationStore'
 import { generateId } from '../utils/id'
 import type { Presentation } from '../types'
+import type { FC } from 'react'
 
 const presentations: { value: Presentation; label: string }[] = [
   { value: 'pastilla', label: 'Pastilla' },
@@ -16,7 +17,20 @@ const presentations: { value: Presentation; label: string }[] = [
   { value: 'otro', label: 'Otro' },
 ]
 
-const colors = ['#0891B2', '#22C55E', '#EF4444', '#F59E0B', '#8B5CF6']
+const iconOptions: { value: string; icon: FC<{ className?: string }> }[] = [
+  { value: 'pill', icon: Pill },
+  { value: 'flask', icon: FlaskRound },
+  { value: 'syringe', icon: Syringe },
+  { value: 'wind', icon: Wind },
+  { value: 'droplets', icon: Droplets },
+  { value: 'heart', icon: Heart },
+  { value: 'bone', icon: Bone },
+  { value: 'eye', icon: Eye },
+  { value: 'ear', icon: Ear },
+  { value: 'stethoscope', icon: Stethoscope },
+]
+
+const colors = ['#0891B2', '#22C55E', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899', '#F97316', '#14B8A6']
 
 export function MedicationWizard() {
   const navigate = useNavigate()
@@ -25,6 +39,7 @@ export function MedicationWizard() {
   const [presentation, setPresentation] = useState<Presentation>('pastilla')
   const [doseValue, setDoseValue] = useState('500')
   const [doseUnit, setDoseUnit] = useState('mg')
+  const [selectedIcon, setSelectedIcon] = useState<string | undefined>(undefined)
   const [color, setColor] = useState<string | undefined>(undefined)
   const [error, setError] = useState('')
 
@@ -40,10 +55,11 @@ export function MedicationWizard() {
       presentation,
       doseValue: Number(doseValue) || 0,
       doseUnit: doseUnit.trim(),
+      icon: selectedIcon,
       color,
       createdAt: new Date().toISOString(),
     })
-    navigate('/meds')
+    navigate(-1)
   }
 
   return (
@@ -84,8 +100,25 @@ export function MedicationWizard() {
         </div>
 
         <div>
+          <label className="text-xs font-medium text-text dark:text-gray-300 mb-1.5 block">Icono (opcional)</label>
+          <div className="flex gap-2 flex-wrap">
+            {iconOptions.map((opt) => {
+              const Icon = opt.icon
+              return (
+                <button key={opt.value} onClick={() => setSelectedIcon(opt.value === selectedIcon ? undefined : opt.value)}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200 ${
+                    selectedIcon === opt.value ? 'bg-primary text-white ring-2 ring-primary/30' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}>
+                  <Icon className="w-4 h-4" />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div>
           <label className="text-xs font-medium text-text dark:text-gray-300 mb-1.5 block">Color (opcional)</label>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap">
             {colors.map((c) => (
               <button key={c} onClick={() => setColor(c === color ? undefined : c)}
                 className={`w-7 h-7 rounded-full cursor-pointer transition-all duration-200 ${c === color ? 'ring-2 ring-offset-2 ring-primary' : ''}`}

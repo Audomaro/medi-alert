@@ -6,6 +6,7 @@ interface MedicationState {
   medications: Medication[]
   load: () => Promise<void>
   add: (m: Medication) => Promise<void>
+  update: (m: Medication) => Promise<void>
   remove: (id: string) => Promise<void>
 }
 
@@ -18,6 +19,10 @@ export const useMedicationStore = create<MedicationState>((set) => ({
   add: async (m) => {
     await saveMedication(m)
     set((s) => ({ medications: [...s.medications, m] }))
+  },
+  update: async (m) => {
+    await saveMedication(m)
+    set((s) => ({ medications: s.medications.map((med) => (med.id === m.id ? m : med)) }))
   },
   remove: async (id) => {
     await deleteMedication(id)

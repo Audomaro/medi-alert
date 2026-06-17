@@ -24,3 +24,16 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cached) => cached || fetch(event.request)),
   )
 })
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      if (clients.length > 0) {
+        clients[0].focus()
+      } else {
+        self.clients.openWindow('/')
+      }
+    }),
+  )
+})
