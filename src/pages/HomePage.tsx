@@ -5,43 +5,21 @@ import { WeekCalendar } from '../components/WeekCalendar'
 import { DoseCard } from '../components/DoseCard'
 import { FabMenu } from '../components/FabMenu'
 import { ThemeToggle } from '../components/ThemeToggle'
-import { useMedicationStore } from '../stores/medicationStore'
-import { useTreatmentStore } from '../stores/treatmentStore'
+import { useDoseScheduleStore } from '../stores/doseScheduleStore'
 import { todayISO, formatDateDisplay } from '../utils/date'
-import { useDoseChecker } from '../hooks/useDoseChecker'
-import type { DoseWithDetails } from '../types'
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { treatments, doseLogs, loadTreatments, loadDoseLogs, updateDoseStatus, removeDoseLog } = useTreatmentStore()
-  const { medications, load: loadMeds } = useMedicationStore()
+  const { doses, loadDosesForDate, updateDoseStatus } = useDoseScheduleStore()
   const [selectedDate, setSelectedDate] = useState(todayISO())
 
   useEffect(() => {
-    loadTreatments()
-    loadMeds()
-  }, [])
+    loadDosesForDate(selectedDate)
+  }, [selectedDate])
 
-  useEffect(() => {
-    loadDoseLogs(selectedDate)
-  }, [selectedDate, treatments.length])
+  const sortedDoses = [...doses].sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime))
 
-  useDoseChecker()
-
-  const dosesWithDetails: DoseWithDetails[] = doseLogs.map((log) => {
-    const med = medications.find((m) => m.id === log.medicationId)
-    return {
-      ...log,
-      medicationName: med?.name || 'Desconocido',
-      medicationIcon: med?.icon,
-      medicationColor: med?.color,
-      presentation: med?.presentation || 'otro',
-    }
-  })
-
-  const sortedDoses = [...dosesWithDetails].sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime))
-
-  const pendingCount = doseLogs.filter((l) => l.status === 'pending').length
+  const pendingCount = doses.filter((d) => d.status === 'pending').length
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -56,27 +34,26 @@ export function HomePage() {
   }, [pendingCount])
 
   useEffect(() => {
-    if (treatments.length === 0 || doseLogs.length === 0) return
+    if (doses.length === 0) return
     const checkUpcoming = setInterval(() => {
       const now = new Date()
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-      const pendingDoses = doseLogs.filter((l) =>
-        l.status === 'pending' &&
-        l.scheduledDate === selectedDate &&
-        l.scheduledTime === currentTime
+      const pendingDoses = doses.filter((d) =>
+        d.status === 'pending' &&
+        d.scheduledDate === selectedDate &&
+        d.scheduledTime === currentTime
       )
       for (const dose of pendingDoses) {
-        const med = medications.find((m) => m.id === dose.medicationId)
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Medi-alert', {
-            body: `Es hora de tomar ${med?.name || 'tu medicamento'}`,
+            body: `Es hora de tomar ${dose.medicationName || 'tu medicamento'}`,
             icon: '/icons/192.png',
           })
         }
       }
     }, 30000)
     return () => clearInterval(checkUpcoming)
-  }, [treatments, doseLogs, medications, selectedDate])
+  }, [doses, selectedDate])
 
   return (
     <div>
@@ -100,7 +77,7 @@ export function HomePage() {
         {sortedDoses.length === 0 && (
           <div className="text-center py-12 text-gray-400 dark:text-gray-500">
             <p className="text-lg font-medium mb-1">Sin dosis este día</p>
-            <p className="text-sm">Selecciona otro día o agrega un tratamiento</p>
+            <p className="text-sm">Selecciona otro día o agrega una dosis</p>
           </div>
         )}
         {sortedDoses.map((dose) => (
@@ -111,18 +88,18 @@ export function HomePage() {
             doseValue={dose.doseValue}
             doseUnit={dose.doseUnit}
             presentation={dose.presentation}
+            icon={dose.medicationIcon}
             status={dose.status}
             color={dose.medicationColor}
-            treatmentId={dose.treatmentId}
-            onMarkTaken={() => updateDoseStatus(dose.id, 'taken')}
-            onMarkSkipped={() => updateDoseStatus(dose.id, 'skipped')}
-            onMarkCancelled={() => updateDoseStatus(dose.id, 'cancelled')}
-            onDelete={() => removeDoseLog(dose.id)}
+            scheduleId={dose.scheduleId}
+            onMarkTaken={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'taken')}
+            onMarkSkipped={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'skipped')}
+            onMarkCancelled={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'cancelled')}
           />
         ))}
       </div>
 
-      <FabMenu onAddTreatment={() => navigate('/treatment/new')} onAddMedication={() => navigate('/medication/new')} />
+      <FabMenu onAddDose={() => navigate('/dose/new')} />
     </div>
   )
 }

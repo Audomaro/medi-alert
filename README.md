@@ -1,73 +1,107 @@
-# React + TypeScript + Vite
+# Medi-alert
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Medication reminder PWA with offline support, dose scheduling, and day-by-day tracking.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + TypeScript
+- Vite 6 + Tailwind CSS 4
+- Zustand (state management)
+- idb (IndexedDB wrapper)
+- Lucide React (icons)
+- PWA + Service Worker (offline)
 
-## React Compiler
+## Database Structure
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+3 object stores in IndexedDB:
 
-## Expanding the ESLint configuration
+```mermaid
+erDiagram
+    Medication ||--o{ DoseSchedule : "catalog entry for"
+    DoseSchedule ||--o{ DoseAction : "generates instances of"
+    Medication ||--o{ DoseAction : "display info from"
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+    Medication {
+        string id PK
+        string name
+        string presentation
+        number doseValue
+        string doseUnit
+        string icon
+        string color
+        string createdAt
+        string updatedAt
+    }
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+    DoseSchedule {
+        string id PK
+        string medicationId FK
+        string frequencyType
+        object frequencyConfig
+        array doses
+        string startDate
+        string endDate
+        boolean active
+        string createdAt
+        string updatedAt
+    }
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+    DoseAction {
+        string id PK
+        string scheduleId FK
+        string medicationId FK
+        string scheduledDate
+        string scheduledTime
+        string doseLabel
+        string status
+        string takenAt
+    }
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Stores
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Store | Purpose |
+|-------|---------|
+| `medications` | Medication catalog (name, presentation, dose, icon, color) |
+| `dose_schedules` | Dose plans linking a medication to a frequency + time range |
+| `dose_actions` | User interactions with individual doses (taken/skipped/cancelled) |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Key Design Decisions
+
+- **On-demand dose computation**: Pending doses are computed from `dose_schedules` at query time instead of being pre-generated. Only user interactions are persisted.
+- **Deterministic IDs**: `DoseAction.id` = `${scheduleId}|${scheduledDate}|${scheduledTime}|${doseLabel}` — ensures consistent lookup.
+- **No redundant dose values**: `doseValue`/`doseUnit` live in `Medication` and `DoseSchedule.doses[]`; `DoseAction` references these rather than duplicating them.
+
+## Architecture
+
 ```
+src/
+├── components/     # Reusable UI (DoseCard, WeekCalendar, FabMenu, etc.)
+├── db/             # IndexedDB layer (idb wrapper)
+├── pages/          # Route pages (Home, Medications, More, EditMedication)
+├── stores/         # Zustand stores (medication, doseSchedule)
+├── wizard/         # Multi-step wizards (MedicationWizard, DoseWizard)
+├── types/          # TypeScript interfaces
+├── utils/          # Helpers (date, id generation)
+└── App.tsx         # Router setup
+```
+
+## Commands
+
+```bash
+npm run dev       # Start dev server (PWA manifest disabled)
+npm run build     # Production build
+npm run preview   # Preview production build
+npx tsc --noEmit  # Type-check
+```
+
+## Features
+
+- Medication catalog with icons, colors, and custom doses
+- 3-step dose wizard (select med → frequency → duration)
+- Week calendar view with daily dose list
+- Dose actions: taken, skipped, cancelled
+- Dark/light theme
+- Notifications and app badges
+- Offline-ready (PWA + service worker)
+- Full data deletion

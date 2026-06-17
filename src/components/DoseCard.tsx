@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Pill, FlaskRound, Syringe, Wind, Droplets, MoreVertical, Check, X, Ban, Trash2, Pencil } from 'lucide-react'
+import { Pill, FlaskRound, Syringe, Wind, Droplets, Heart, Bone, Eye, Ear, Stethoscope, MoreVertical, Check, X, Ban, Pencil } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { formatTime24to12 } from '../utils/date'
 import type { Presentation, DoseStatus } from '../types'
@@ -8,6 +8,12 @@ import type { Presentation, DoseStatus } from '../types'
 const iconMap: Record<Presentation, typeof Pill> = {
   pastilla: Pill, capsula: Pill, tableta: Pill, inyeccion: Syringe,
   solucion: FlaskRound, gotas: Droplets, inhalador: Wind, otro: Pill,
+}
+
+const medicationIconMap: Record<string, typeof Pill> = {
+  pill: Pill, flask: FlaskRound, syringe: Syringe, wind: Wind,
+  droplets: Droplets, heart: Heart, bone: Bone, eye: Eye,
+  ear: Ear, stethoscope: Stethoscope,
 }
 
 interface Props {
@@ -19,11 +25,10 @@ interface Props {
   status: DoseStatus
   icon?: string
   color?: string
-  treatmentId: string
+  scheduleId: string
   onMarkTaken: () => void
   onMarkSkipped: () => void
   onMarkCancelled: () => void
-  onDelete: () => void
 }
 
 const menuActions = [
@@ -32,11 +37,9 @@ const menuActions = [
   { key: 'cancelled', label: 'Cancelar dosis', icon: Ban, color: 'text-gray-500' },
 ] as const
 
-const divider = 'divider'
-
-export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, status, color, treatmentId, onMarkTaken, onMarkSkipped, onMarkCancelled, onDelete }: Props) {
+export function DoseCard({ time, medicationName, doseValue, doseUnit, presentation, icon, status, color, scheduleId, onMarkTaken, onMarkSkipped, onMarkCancelled }: Props) {
   const navigate = useNavigate()
-  const Icon = iconMap[presentation] || Pill
+  const Icon = (icon && medicationIconMap[icon]) || iconMap[presentation] || Pill
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -54,7 +57,6 @@ export function DoseCard({ time, medicationName, doseValue, doseUnit, presentati
     taken: onMarkTaken,
     skipped: onMarkSkipped,
     cancelled: onMarkCancelled,
-    delete: onDelete,
   }
 
   const isPending = status === 'pending'
@@ -108,19 +110,11 @@ export function DoseCard({ time, medicationName, doseValue, doseUnit, presentati
                   </div>
                 )}
                 <button
-                  onClick={() => { navigate(`/treatment/edit/${treatmentId}`); setMenuOpen(false) }}
+                  onClick={() => { navigate(`/dose/edit/${scheduleId}`); setMenuOpen(false) }}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
                   <Pencil className="w-4 h-4 text-primary" />
-                  <span className="text-text dark:text-white">Editar tratamiento</span>
-                </button>
-                <hr className="border-gray-100 dark:border-gray-600 my-1" />
-                <button
-                  onClick={() => { handlers.delete(); setMenuOpen(false) }}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4 text-red-500" />
-                  <span className="text-red-600 dark:text-red-400">Eliminar dosis</span>
+                  <span className="text-text dark:text-white">Editar medicamento</span>
                 </button>
               </div>
             )}

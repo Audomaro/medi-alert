@@ -58,6 +58,7 @@ export function MedicationWizard() {
       icon: selectedIcon,
       color,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     })
     navigate(-1)
   }

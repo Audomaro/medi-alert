@@ -5,7 +5,6 @@ export type FrequencyType = 'daily' | 'specific_days' | 'every_x_days' | 'every_
 export type DoseStatus = 'pending' | 'taken' | 'skipped' | 'cancelled'
 
 export interface FrequencyConfig {
-  type: FrequencyType
   timesPerDay?: number
   days?: number[]
   interval?: number
@@ -27,23 +26,36 @@ export interface Medication {
   icon?: string
   color?: string
   createdAt: string
+  updatedAt: string
 }
 
-export interface Treatment {
+export interface DoseSchedule {
   id: string
   medicationId: string
   frequencyType: FrequencyType
   frequencyConfig: FrequencyConfig
   doses: Dose[]
   startDate: string
-  endDate?: string
+  endDate: string
   active: boolean
   createdAt: string
+  updatedAt: string
 }
 
-export interface DoseLog {
+export interface DoseAction {
   id: string
-  treatmentId: string
+  scheduleId: string
+  medicationId: string
+  scheduledDate: string
+  scheduledTime: string
+  doseLabel: string
+  status: 'taken' | 'skipped' | 'cancelled'
+  takenAt?: string
+}
+
+export interface DoseWithDetails {
+  id: string
+  scheduleId: string
   medicationId: string
   scheduledDate: string
   scheduledTime: string
@@ -52,9 +64,6 @@ export interface DoseLog {
   takenAt?: string
   doseValue: number
   doseUnit: string
-}
-
-export interface DoseWithDetails extends DoseLog {
   medicationName: string
   medicationIcon?: string
   medicationColor?: string

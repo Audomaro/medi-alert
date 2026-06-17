@@ -17,12 +17,14 @@ export const useMedicationStore = create<MedicationState>((set) => ({
     set({ medications: meds })
   },
   add: async (m) => {
-    await saveMedication(m)
-    set((s) => ({ medications: [...s.medications, m] }))
+    const toSave = { ...m, updatedAt: m.createdAt }
+    await saveMedication(toSave)
+    set((s) => ({ medications: [...s.medications, toSave] }))
   },
   update: async (m) => {
-    await saveMedication(m)
-    set((s) => ({ medications: s.medications.map((med) => (med.id === m.id ? m : med)) }))
+    const toSave = { ...m, updatedAt: new Date().toISOString() }
+    await saveMedication(toSave)
+    set((s) => ({ medications: s.medications.map((med) => (med.id === m.id ? toSave : med)) }))
   },
   remove: async (id) => {
     await deleteMedication(id)

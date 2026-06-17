@@ -26,13 +26,13 @@ export function EditMedicationPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { medications, update } = useMedicationStore()
+
   const [name, setName] = useState('')
   const [presentation, setPresentation] = useState<Presentation>('pastilla')
   const [doseValue, setDoseValue] = useState('')
   const [doseUnit, setDoseUnit] = useState('')
   const [selectedIcon, setSelectedIcon] = useState<string | undefined>(undefined)
   const [color, setColor] = useState<string | undefined>(undefined)
-  const [createdAt, setCreatedAt] = useState('')
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -44,10 +44,12 @@ export function EditMedicationPage() {
       setDoseUnit(med.doseUnit)
       setSelectedIcon(med.icon)
       setColor(med.color)
-      setCreatedAt(med.createdAt)
       setLoaded(true)
     }
   }, [id, medications])
+
+  const dv = Number(doseValue) || 0
+  const du = doseUnit.trim() || 'mg'
 
   const handleSave = async () => {
     if (!name.trim() || !id) return
@@ -55,11 +57,10 @@ export function EditMedicationPage() {
       id,
       name: name.trim(),
       presentation,
-      doseValue: Number(doseValue) || 0,
-      doseUnit: doseUnit.trim(),
+      doseValue: dv,
+      doseUnit: du,
       icon: selectedIcon,
       color,
-      createdAt,
     })
     navigate('/meds')
   }

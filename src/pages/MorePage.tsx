@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, Palette, Info, Trash2 } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
 import { useMedicationStore } from '../stores/medicationStore'
-import { useTreatmentStore } from '../stores/treatmentStore'
+import { useDoseScheduleStore } from '../stores/doseScheduleStore'
+import { todayISO } from '../utils/date'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export function MorePage() {
   const { dark, toggle } = useThemeStore()
   const { load: loadMeds } = useMedicationStore()
-  const { loadTreatments, loadDoseLogs } = useTreatmentStore()
+  const { loadDosesForDate } = useDoseScheduleStore()
   const navigate = useNavigate()
   const [showConfirm, setShowConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -19,7 +20,7 @@ export function MorePage() {
     try {
       const { deleteAllData } = await import('../db')
       await deleteAllData()
-      await Promise.all([loadMeds(), loadTreatments(), loadDoseLogs(new Date().toISOString().split('T')[0])])
+      await Promise.all([loadMeds(), loadDosesForDate(todayISO())])
       setShowConfirm(false)
     } finally {
       setDeleting(false)
