@@ -53,12 +53,12 @@ export function MorePage() {
             if (sw) {
               sw.showNotification('Medi-alert — Prueba', {
                 body: 'Si ves esto, las notificaciones funcionan correctamente.',
-                icon: '/icons/192.png',
+                icon: 'icons/192.png',
               })
             } else {
               new Notification('Medi-alert — Prueba', {
                 body: 'Si ves esto, las notificaciones funcionan correctamente. (sin SW)',
-                icon: '/icons/192.png',
+                icon: 'icons/192.png',
               })
             }
           }} className="w-full flex items-center gap-3 p-4 border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">

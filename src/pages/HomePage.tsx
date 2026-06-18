@@ -76,7 +76,7 @@ export function HomePage() {
           navigator.serviceWorker.ready.then((reg) => {
             reg.showNotification('Medi-alert', {
               body: `Es hora de tomar ${dose.medicationName || 'tu medicamento'}`,
-              icon: '/icons/192.png',
+              icon: 'icons/192.png',
               tag: dose.id,
               actions: [
                 { action: 'taken', title: 'Tomar' },

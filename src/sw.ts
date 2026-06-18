@@ -73,7 +73,7 @@ async function showDoseNotification(instance: DoseInstance, medName: string): Pr
   await self.registration.showNotification(`Medi-alert — ${medName}`, {
     body: `${doseValue}${doseUnit} — programada para las ${scheduledTime}`,
     tag: id,
-    icon: '/icons/192.png',
+    icon: 'icons/192.png',
     actions: [
       { action: 'taken',     title: 'Tomar' },
       { action: 'skipped',   title: 'Saltar' },
