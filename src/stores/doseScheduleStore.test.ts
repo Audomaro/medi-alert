@@ -8,7 +8,6 @@ import {
   deleteDoseSchedule,
   getActiveSchedulesForDate,
   getDoseActionsByDate,
-  getDoseActionsBySchedule,
   saveDoseAction,
   deleteDoseAction,
   deleteDoseActionsBySchedule,
@@ -23,7 +22,6 @@ const mockedSaveDoseSchedule = vi.mocked(saveDoseSchedule)
 const mockedDeleteDoseSchedule = vi.mocked(deleteDoseSchedule)
 const mockedGetActiveSchedulesForDate = vi.mocked(getActiveSchedulesForDate)
 const mockedGetDoseActionsByDate = vi.mocked(getDoseActionsByDate)
-const mockedGetDoseActionsBySchedule = vi.mocked(getDoseActionsBySchedule)
 const mockedSaveDoseAction = vi.mocked(saveDoseAction)
 const mockedDeleteDoseAction = vi.mocked(deleteDoseAction)
 const mockedDeleteDoseActionsBySchedule = vi.mocked(deleteDoseActionsBySchedule)
@@ -109,19 +107,17 @@ describe('doseScheduleStore - deleteDoseSlot (Solo esta)', () => {
   })
 })
 
-describe('doseScheduleStore - deleteFutureDoses', () => {
+describe('doseScheduleStore - deleteFutureDoses (Esta y futuras)', () => {
   beforeEach(() => {
     resetStore()
     vi.clearAllMocks()
   })
 
-  it('removes only the targeted dose instance from state, preserving other doses of the same schedule on the same date', async () => {
+  it('modifies schedule endDate and removes dose, preserving other doses on same date', async () => {
     const schedule = makeSchedule()
     mockedGetDoseSchedule.mockResolvedValue(schedule)
-    mockedGetDoseActionsBySchedule.mockResolvedValue([])
     mockedSaveDoseSchedule.mockResolvedValue(undefined)
     mockedDeleteDoseSchedule.mockResolvedValue(undefined)
-    mockedDeleteDoseAction.mockResolvedValue(undefined)
 
     mockedGetActiveSchedulesForDate.mockResolvedValue([schedule])
     mockedGetDoseActionsByDate.mockResolvedValue([])
@@ -139,6 +135,7 @@ describe('doseScheduleStore - deleteFutureDoses', () => {
     const doses = useDoseScheduleStore.getState().doses
     expect(doses).toHaveLength(1)
     expect(doses[0].scheduledTime).toBe('14:00')
+
     expect(mockedSaveDoseSchedule).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'sched-1',
@@ -146,14 +143,13 @@ describe('doseScheduleStore - deleteFutureDoses', () => {
         endDate: '2026-06-14',
       })
     )
+    expect(mockedDeleteDoseAction).not.toHaveBeenCalled()
   })
 
-  it('deletes the entire schedule when removing the last remaining dose and future dates', async () => {
+  it('deletes the entire schedule when removing the last remaining dose', async () => {
     const schedule = makeSchedule({ doses: [{ label: 'Mañana', time: '08:00', doseValue: 500, doseUnit: 'mg' }] })
     mockedGetDoseSchedule.mockResolvedValue(schedule)
-    mockedGetDoseActionsBySchedule.mockResolvedValue([])
     mockedDeleteDoseSchedule.mockResolvedValue(undefined)
-    mockedDeleteDoseAction.mockResolvedValue(undefined)
 
     mockedGetActiveSchedulesForDate.mockResolvedValue([schedule])
     mockedGetDoseActionsByDate.mockResolvedValue([])

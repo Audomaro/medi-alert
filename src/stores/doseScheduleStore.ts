@@ -8,7 +8,6 @@ import {
   deleteDoseSchedule,
   getActiveSchedulesForDate,
   getDoseActionsByDate,
-  getDoseActionsBySchedule,
   saveDoseAction,
   deleteDoseAction,
   deleteDoseActionsBySchedule,
@@ -125,12 +124,6 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
   deleteFutureDoses: async (instanceId, scheduleId, scheduledDate, doseLabel, scheduledTime) => {
     const s = await getDoseSchedule(scheduleId)
     if (!s) return
-
-    // Clean up orphaned DoseActions for this dose label + time
-    const actions = await getDoseActionsBySchedule(scheduleId)
-    for (const a of actions) {
-      if (a.doseLabel === doseLabel && a.scheduledTime === scheduledTime) await deleteDoseAction(a.id)
-    }
 
     // Calculate day before the current dose's date
     const d = new Date(scheduledDate + 'T12:00:00')
