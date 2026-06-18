@@ -67,68 +67,45 @@ function resetStore() {
   })
 }
 
-describe('doseScheduleStore - deleteDoseSlot', () => {
+describe('doseScheduleStore - deleteDoseSlot (Solo esta)', () => {
   beforeEach(() => {
     resetStore()
     vi.clearAllMocks()
   })
 
-  it('removes only the targeted dose instance from state, preserving other doses of the same schedule', async () => {
+  it('creates a deleted action and removes only the targeted instance from state', async () => {
     const schedule = makeSchedule()
-    mockedGetDoseSchedule.mockResolvedValue(schedule)
-    mockedGetDoseActionsBySchedule.mockResolvedValue([])
-    mockedSaveDoseSchedule.mockResolvedValue(undefined)
-    mockedDeleteDoseSchedule.mockResolvedValue(undefined)
-    mockedDeleteDoseAction.mockResolvedValue(undefined)
-
     mockedGetActiveSchedulesForDate.mockResolvedValue([schedule])
     mockedGetDoseActionsByDate.mockResolvedValue([])
     mockedGetAllMedications.mockResolvedValue([medication])
+    mockedSaveDoseAction.mockResolvedValue(undefined)
 
     const store = useDoseScheduleStore.getState()
     await store.loadDosesForDate('2026-06-15')
 
     expect(useDoseScheduleStore.getState().doses).toHaveLength(2)
-    expect(useDoseScheduleStore.getState().doses.map((d) => d.scheduledTime)).toContain('08:00')
-    expect(useDoseScheduleStore.getState().doses.map((d) => d.scheduledTime)).toContain('14:00')
 
     const instanceId = useDoseScheduleStore.getState().doses.find((d) => d.scheduledTime === '08:00')!.id
 
-    await store.deleteDoseSlot(instanceId, 'sched-1', 'Mañana', '08:00')
+    await store.deleteDoseSlot(instanceId, 'sched-1', 'med-1', '2026-06-15', 'Mañana', '08:00')
 
     const doses = useDoseScheduleStore.getState().doses
     expect(doses).toHaveLength(1)
     expect(doses[0].scheduledTime).toBe('14:00')
-    expect(mockedSaveDoseSchedule).toHaveBeenCalledWith(
+
+    expect(mockedSaveDoseAction).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'sched-1',
-        doses: [{ label: 'Tarde', time: '14:00', doseValue: 250, doseUnit: 'mg' }],
+        id: instanceId,
+        scheduleId: 'sched-1',
+        medicationId: 'med-1',
+        scheduledDate: '2026-06-15',
+        scheduledTime: '08:00',
+        doseLabel: 'Mañana',
+        status: 'deleted',
       })
     )
-  })
-
-  it('deletes the entire schedule when removing the last remaining dose', async () => {
-    const schedule = makeSchedule({ doses: [{ label: 'Mañana', time: '08:00', doseValue: 500, doseUnit: 'mg' }] })
-    mockedGetDoseSchedule.mockResolvedValue(schedule)
-    mockedGetDoseActionsBySchedule.mockResolvedValue([])
-    mockedDeleteDoseSchedule.mockResolvedValue(undefined)
-    mockedDeleteDoseAction.mockResolvedValue(undefined)
-
-    mockedGetActiveSchedulesForDate.mockResolvedValue([schedule])
-    mockedGetDoseActionsByDate.mockResolvedValue([])
-    mockedGetAllMedications.mockResolvedValue([medication])
-
-    const store = useDoseScheduleStore.getState()
-    await store.loadDosesForDate('2026-06-15')
-
-    expect(useDoseScheduleStore.getState().doses).toHaveLength(1)
-
-    const instanceId = useDoseScheduleStore.getState().doses[0].id
-    await store.deleteDoseSlot(instanceId, 'sched-1', 'Mañana', '08:00')
-
-    expect(useDoseScheduleStore.getState().doses).toHaveLength(0)
-    expect(useDoseScheduleStore.getState().doseSchedules).toHaveLength(0)
-    expect(mockedDeleteDoseSchedule).toHaveBeenCalledWith('sched-1')
+    expect(mockedSaveDoseSchedule).not.toHaveBeenCalled()
+    expect(mockedDeleteDoseSchedule).not.toHaveBeenCalled()
   })
 })
 

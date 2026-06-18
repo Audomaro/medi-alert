@@ -33,7 +33,7 @@ interface DoseScheduleState {
     status: 'taken' | 'skipped' | 'cancelled'
   ) => Promise<void>
   deleteFutureDoses: (instanceId: string, scheduleId: string, scheduledDate: string, doseLabel: string, scheduledTime: string) => Promise<void>
-  deleteDoseSlot: (instanceId: string, scheduleId: string, doseLabel: string, scheduledTime: string) => Promise<void>
+  deleteDoseSlot: (instanceId: string, scheduleId: string, medicationId: string, scheduledDate: string, doseLabel: string, scheduledTime: string) => Promise<void>
 }
 
 export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
@@ -155,32 +155,19 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
       }))
     }
   },
-  deleteDoseSlot: async (instanceId, scheduleId, doseLabel, scheduledTime) => {
-    const s = await getDoseSchedule(scheduleId)
-    if (!s) return
-
-    // Clean up orphaned DoseActions for this dose label + time
-    const actions = await getDoseActionsBySchedule(scheduleId)
-    for (const a of actions) {
-      if (a.doseLabel === doseLabel && a.scheduledTime === scheduledTime) await deleteDoseAction(a.id)
+  deleteDoseSlot: async (instanceId, scheduleId, medicationId, scheduledDate, doseLabel, scheduledTime) => {
+    const action: DoseAction = {
+      id: instanceId,
+      scheduleId,
+      medicationId,
+      scheduledDate,
+      scheduledTime,
+      doseLabel,
+      status: 'deleted',
     }
-
-    // Remove this specific dose time from schedule (match by label + time)
-    const remaining = s.doses.filter((d) => d.label !== doseLabel || d.time !== scheduledTime)
-
-    if (remaining.length === 0) {
-      await deleteDoseSchedule(scheduleId)
-      set((state) => ({
-        doseSchedules: state.doseSchedules.filter((x) => x.id !== scheduleId),
-        doses: state.doses.filter((d) => d.scheduleId !== scheduleId),
-      }))
-    } else {
-      const updated = { ...s, doses: remaining, updatedAt: new Date().toISOString() }
-      await saveDoseSchedule(updated)
-      set((state) => ({
-        doseSchedules: state.doseSchedules.map((x) => (x.id === scheduleId ? updated : x)),
-        doses: state.doses.filter((d) => d.id !== instanceId),
-      }))
-    }
+    await saveDoseAction(action)
+    set((state) => ({
+      doses: state.doses.filter((d) => d.id !== instanceId),
+    }))
   },
 }))

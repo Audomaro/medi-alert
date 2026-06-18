@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell } from 'lucide-react'
+import { Bell, Trash2 } from 'lucide-react'
 import { WeekCalendar } from '../components/WeekCalendar'
 import { DoseCard } from '../components/DoseCard'
 import { FabMenu } from '../components/FabMenu'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useDoseScheduleStore } from '../stores/doseScheduleStore'
 import { todayISO, formatDateDisplay } from '../utils/date'
+import type { DoseWithDetails } from '../types'
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { doses, loadDosesForDate, updateDoseStatus, hideDosePermanently } = useDoseScheduleStore()
+  const { doses, loadDosesForDate, updateDoseStatus, deleteFutureDoses, deleteDoseSlot, remove: removeSchedule } = useDoseScheduleStore()
   const [selectedDate, setSelectedDate] = useState(todayISO())
+  const [deletingDose, setDeletingDose] = useState<DoseWithDetails | null>(null)
 
   useEffect(() => {
     loadDosesForDate(selectedDate)
@@ -38,7 +40,7 @@ export function HomePage() {
       if (event.data?.type !== 'DOSE_ACTION') return
       const { action, doseId, scheduleId, medicationId, scheduledDate, scheduledTime, doseLabel } = event.data
       if (action === 'delete') {
-        hideDosePermanently(doseId)
+        deleteDoseSlot(doseId, scheduleId, medicationId, scheduledDate, doseLabel, scheduledTime)
       } else {
         updateDoseStatus(doseId, scheduleId, medicationId, scheduledDate, scheduledTime, doseLabel, action)
       }
@@ -125,12 +127,61 @@ export function HomePage() {
             onMarkTaken={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'taken')}
             onMarkSkipped={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'skipped')}
             onMarkCancelled={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'cancelled')}
-            onDelete={() => hideDosePermanently(dose.id)}
+            onDelete={() => setDeletingDose(dose)}
           />
         ))}
       </div>
 
       <FabMenu onAddDose={() => navigate('/dose/new')} />
+
+      {deletingDose && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 max-w-sm w-full shadow-xl">
+            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-3">
+              <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+            </div>
+            <h3 className="text-lg font-bold text-text dark:text-white mb-1">Eliminar dosis</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+              {deletingDose.medicationName} — {deletingDose.scheduledTime}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  deleteDoseSlot(deletingDose.id, deletingDose.scheduleId, deletingDose.medicationId, deletingDose.scheduledDate, deletingDose.doseLabel, deletingDose.scheduledTime)
+                  setDeletingDose(null)
+                }}
+                className="w-full py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-text dark:text-white text-sm font-medium cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Solo esta
+              </button>
+              <button
+                onClick={() => {
+                  deleteFutureDoses(deletingDose.id, deletingDose.scheduleId, deletingDose.scheduledDate, deletingDose.doseLabel, deletingDose.scheduledTime)
+                  setDeletingDose(null)
+                }}
+                className="w-full py-2.5 rounded-xl bg-orange-500 text-white text-sm font-medium cursor-pointer hover:bg-orange-600 transition-colors"
+              >
+                Esta y futuras
+              </button>
+              <button
+                onClick={() => {
+                  removeSchedule(deletingDose.scheduleId)
+                  setDeletingDose(null)
+                }}
+                className="w-full py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium cursor-pointer hover:bg-red-600 transition-colors"
+              >
+                Todas las fechas
+              </button>
+              <button
+                onClick={() => setDeletingDose(null)}
+                className="w-full py-2.5 rounded-xl text-sm text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
