@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb'
-import type { Medication, DoseSchedule, DoseInstance } from '../types'
+import type { DoseInstance, DoseSchedule, Medication } from '../types'
 import { generateDoseInstances } from '../utils/generateInstances'
 
 const DB_NAME = 'medi-alert'

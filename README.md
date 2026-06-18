@@ -13,13 +13,13 @@ Medication reminder PWA with offline support, dose scheduling, and day-by-day tr
 
 ## Database Structure
 
-4 object stores in IndexedDB:
+3 object stores in IndexedDB (DB_VERSION 8):
 
 ```mermaid
 erDiagram
     Medication ||--o{ DoseSchedule : "catalog entry for"
-    DoseSchedule ||--o{ DoseAction : "generates instances of"
-    Medication ||--o{ DoseAction : "display info from"
+    DoseSchedule ||--o{ DoseInstance : "pre-generates"
+    Medication ||--o{ DoseInstance : "display info from"
 
     Medication {
         string id PK
@@ -38,7 +38,7 @@ erDiagram
         string medicationId FK
         string frequencyType
         object frequencyConfig
-        array doses
+        array doseDefinitions
         string startDate
         string endDate
         boolean active
@@ -46,15 +46,19 @@ erDiagram
         string updatedAt
     }
 
-    DoseAction {
+    DoseInstance {
         string id PK
         string scheduleId FK
         string medicationId FK
         string scheduledDate
         string scheduledTime
         string doseLabel
+        number doseValue
+        string doseUnit
         string status
         string takenAt
+        string createdAt
+        string updatedAt
     }
 ```
 
@@ -63,15 +67,16 @@ erDiagram
 | Store | Purpose |
 |-------|---------|
 | `medications` | Medication catalog (name, presentation, dose, icon, color) |
-| `dose_schedules` | Dose plans linking a medication to a frequency + time range |
-| `dose_actions` | User interactions with individual doses (taken/skipped/cancelled) |
-| `hidden_dose_instances` | Permanently deleted dose instance IDs (hidden from computation) |
+| `dose_schedules` | Dose plans linking a medication to a frequency + time range (configuration template) |
+| `dose_instances` | Pre-generated individual dose occurrences with their current status |
 
 ### Key Design Decisions
 
-- **On-demand dose computation**: Pending doses are computed from `dose_schedules` at query time instead of being pre-generated. Only user interactions are persisted.
-- **Deterministic IDs**: `DoseAction.id` = `${scheduleId}|${scheduledDate}|${scheduledTime}|${doseLabel}` — ensures consistent lookup.
-- **No redundant dose values**: `doseValue`/`doseUnit` live in `Medication` and `DoseSchedule.doses[]`; `DoseAction` references these rather than duplicating them.
+- **Pre-generated dose instances**: All dose occurrences are generated from `dose_schedules` at creation time and stored as individual `DoseInstance` rows. This enables correct "Solo esta" (single instance) and "Esta y futuras" (future instances matching label+time) deletion semantics with real DELETE operations.
+- **Deterministic IDs**: `DoseInstance.id` = `${scheduleId}|${scheduledDate}|${scheduledTime}|${doseLabel}` — ensures consistent lookup.
+- **Three deletion modes**: "Solo esta" deletes 1 row, "Esta y futuras" deletes future rows matching schedule+label+time, "Todas" deletes all instances + the schedule. No hidden/occulation tables.
+- **Status on the instance**: `status` (`pending|taken|skipped|cancelled|deleted`) and `takenAt` live directly on `DoseInstance` — no separate action tracking table.
+- **`DoseDefinition` replaces `Dose`**: Schedules use `doseDefinitions: DoseDefinition[]` (label, time, doseValue, doseUnit) as configuration. Instances carry these values by value at generation time.
 
 ## Architecture
 
@@ -90,10 +95,12 @@ src/
 ## Commands
 
 ```bash
-npm run dev       # Start dev server (PWA manifest disabled)
-npm run build     # Production build
-npm run preview   # Preview production build
-npx tsc --noEmit  # Type-check
+npm run dev            # Start dev server (PWA manifest disabled)
+npm run build          # Production build
+npm run preview        # Preview production build
+npm run test           # Run all tests
+npx tsc --noEmit       # Type-check
+npx vitest run         # Run tests in CI mode
 ```
 
 ## Features
@@ -101,7 +108,7 @@ npx tsc --noEmit  # Type-check
 - Medication catalog with icons, colors, and custom doses
 - 3-step dose wizard (select med → frequency → duration)
 - Week calendar view with daily dose list
-- Dose actions: taken, skipped, cancelled
+- Dose actions: taken, skipped, cancelled with three deletion modes (Solo esta, Esta y futuras, Todas)
 - Dark/light theme
 - Notifications and app badges
 - Offline-ready (PWA + service worker)

@@ -143,7 +143,7 @@ describe('doseScheduleStore - deleteFutureDoses (Esta y futuras)', () => {
     vi.clearAllMocks()
   })
 
-  it('deletes future instances matching label+time, keeps past and other doses', async () => {
+  it('deletes all doses on future dates + same date from time onwards', async () => {
     const allInstances: DoseInstance[] = [
       { id: 'sched-1|2026-06-14|08:00|Mañana', scheduleId: 'sched-1', medicationId: 'med-1', scheduledDate: '2026-06-14', scheduledTime: '08:00', doseLabel: 'Mañana', doseValue: 500, doseUnit: 'mg', status: 'pending', createdAt: '', updatedAt: '' },
       { id: 'sched-1|2026-06-15|08:00|Mañana', scheduleId: 'sched-1', medicationId: 'med-1', scheduledDate: '2026-06-15', scheduledTime: '08:00', doseLabel: 'Mañana', doseValue: 500, doseUnit: 'mg', status: 'pending', createdAt: '', updatedAt: '' },
@@ -158,15 +158,15 @@ describe('doseScheduleStore - deleteFutureDoses (Esta y futuras)', () => {
     })
 
     const store = useDoseScheduleStore.getState()
-    await store.deleteFutureDoses('sched-1', '2026-06-15', 'Mañana', '08:00')
+    await store.deleteFutureDoses('sched-1', '2026-06-15', '08:00')
 
     const doses = useDoseScheduleStore.getState().doses
-    expect(doses).toHaveLength(2)
+    expect(doses).toHaveLength(1)
     expect(doses.find((d) => d.scheduledDate === '2026-06-14')).toBeTruthy() // past kept
-    expect(doses.find((d) => d.scheduledDate === '2026-06-15' && d.scheduledTime === '14:00')).toBeTruthy() // other time kept
-    expect(doses.find((d) => d.scheduledDate === '2026-06-15' && d.scheduledTime === '08:00')).toBeFalsy() // future deleted
-    expect(doses.find((d) => d.scheduledDate === '2026-06-16')).toBeFalsy() // future deleted
-    expect(mockedDeleteDoseInstance).toHaveBeenCalledTimes(2)
+    expect(doses.find((d) => d.scheduledDate === '2026-06-15' && d.scheduledTime === '08:00')).toBeFalsy() // same date, time >= 08:00 → deleted
+    expect(doses.find((d) => d.scheduledDate === '2026-06-15' && d.scheduledTime === '14:00')).toBeFalsy() // same date, time >= 08:00 → deleted
+    expect(doses.find((d) => d.scheduledDate === '2026-06-16')).toBeFalsy() // future date → all deleted
+    expect(mockedDeleteDoseInstance).toHaveBeenCalledTimes(3)
     expect(mockedDeleteDoseInstancesBySchedule).not.toHaveBeenCalled()
     expect(mockedDeleteDoseSchedule).not.toHaveBeenCalled()
   })

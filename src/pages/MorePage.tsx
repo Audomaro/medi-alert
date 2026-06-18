@@ -45,15 +45,26 @@ export function MorePage() {
             </div>
           </button>
 
-          <div className="flex items-center gap-3 p-4 border-t border-gray-100 dark:border-gray-700">
+          <button onClick={async () => {
+            if (!('Notification' in window)) return
+            if (Notification.permission === 'default') await Notification.requestPermission()
+            if (Notification.permission === 'granted') {
+              navigator.serviceWorker.ready.then((reg) => {
+                reg.showNotification('Medi-alert — Prueba', {
+                  body: 'Si ves esto, las notificaciones funcionan correctamente.',
+                  icon: '/icons/192.png',
+                })
+              })
+            }
+          }} className="w-full flex items-center gap-3 p-4 border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
             <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
               <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1">
               <div className="font-medium text-text dark:text-white text-sm">Notificaciones</div>
-              <div className="text-xs text-gray-400">Activadas</div>
+              <div className="text-xs text-gray-400">Presiona para probar</div>
             </div>
-          </div>
+          </button>
 
           <div className="flex items-center gap-3 p-4 border-t border-gray-100 dark:border-gray-700">
             <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">

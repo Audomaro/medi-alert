@@ -156,7 +156,7 @@ export function HomePage() {
               </button>
               <button
                 onClick={() => {
-                  deleteFutureDoses(deletingDose.scheduleId, deletingDose.scheduledDate, deletingDose.doseLabel, deletingDose.scheduledTime)
+                  deleteFutureDoses(deletingDose.scheduleId, deletingDose.scheduledDate, deletingDose.scheduledTime)
                   setDeletingDose(null)
                 }}
                 className="w-full py-2.5 rounded-xl bg-orange-500 text-white text-sm font-medium cursor-pointer hover:bg-orange-600 transition-colors"

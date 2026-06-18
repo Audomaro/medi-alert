@@ -26,7 +26,7 @@ interface DoseScheduleState {
   remove: (id: string) => Promise<void>
   updateDoseStatus: (instanceId: string, status: 'taken' | 'skipped' | 'cancelled') => Promise<void>
   deleteDoseSlot: (instanceId: string) => Promise<void>
-  deleteFutureDoses: (scheduleId: string, fromDate: string, doseLabel: string, scheduledTime: string) => Promise<void>
+  deleteFutureDoses: (scheduleId: string, fromDate: string, scheduledTime: string) => Promise<void>
 }
 
 export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
@@ -112,13 +112,12 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
       doses: state.doses.filter((d) => d.id !== instanceId),
     }))
   },
-  deleteFutureDoses: async (scheduleId, fromDate, doseLabel, scheduledTime) => {
+  deleteFutureDoses: async (scheduleId, fromDate, scheduledTime) => {
     const instances = await getDoseInstancesBySchedule(scheduleId)
     const toDelete = instances.filter(
       (i) =>
-        i.doseLabel === doseLabel &&
-        i.scheduledTime === scheduledTime &&
-        i.scheduledDate >= fromDate
+        i.scheduledDate > fromDate ||
+        (i.scheduledDate === fromDate && i.scheduledTime >= scheduledTime)
     )
 
     const idsToDelete = new Set(toDelete.map((i) => i.id))

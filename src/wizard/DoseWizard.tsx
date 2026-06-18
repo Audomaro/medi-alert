@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Search } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Search, Pill, FlaskRound, Syringe, Wind, Droplets, Heart, Bone, Eye, Ear, Stethoscope } from 'lucide-react'
 import { useMedicationStore } from '../stores/medicationStore'
 import { useDoseScheduleStore } from '../stores/doseScheduleStore'
 import { generateId } from '../utils/id'
 import { todayISO } from '../utils/date'
-import type { Medication, FrequencyType, DoseDefinition } from '../types'
+import type { Medication, Presentation, FrequencyType, DoseDefinition } from '../types'
+
+const iconMap: Record<Presentation, typeof Pill> = {
+  pastilla: Pill, capsula: Pill, tableta: Pill, inyeccion: Syringe,
+  solucion: FlaskRound, gotas: Droplets, inhalador: Wind, otro: Pill,
+}
+
+const medicationIconMap: Record<string, typeof Pill> = {
+  pill: Pill, flask: FlaskRound, syringe: Syringe, wind: Wind,
+  droplets: Droplets, heart: Heart, bone: Bone, eye: Eye,
+  ear: Ear, stethoscope: Stethoscope,
+}
 
 type Step = 1 | 2 | 3
 
@@ -132,19 +143,23 @@ export function DoseWizard() {
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar medicamento..." className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
           </div>
           <div className="flex flex-col gap-1.5 max-h-60 overflow-y-auto">
-            {filtered.map((m) => (
+            {filtered.map((m) => {
+              const Icon = (m.icon && medicationIconMap[m.icon]) || iconMap[m.presentation] || Pill
+              return (
               <div key={m.id} onClick={() => setSelectedMed(m)}
                 className={`p-3 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200 ${
                   selectedMed?.id === m.id ? 'bg-primary/10 border border-primary/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: m.color || '#0891B2' }}>{m.name[0]}</div>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: m.color ? `${m.color}20` : '#E0F2FE', color: m.color || '#0891B2' }}>
+                  <Icon className="w-4 h-4" />
+                </div>
                 <div>
                   <div className="font-medium text-sm text-text dark:text-white">{m.name}</div>
                   <div className="text-xs text-gray-400">{m.doseValue} {m.doseUnit}</div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
           <button onClick={() => navigate('/medication/new')} className="w-full mt-2 p-3 rounded-xl text-primary font-medium text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-primary/5 transition-colors">
             + Agregar medicamento nuevo
