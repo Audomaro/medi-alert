@@ -1,49 +1,19 @@
 import { create } from 'zustand'
 import type { DoseSchedule, DoseWithDetails, DoseAction, Medication } from '../types'
+import { shouldGenerateForDate, generateInstanceId } from '../utils/schedule'
 import {
   getAllDoseSchedules,
+  getDoseSchedule,
   saveDoseSchedule,
   deleteDoseSchedule,
   getActiveSchedulesForDate,
   getDoseActionsByDate,
+  getDoseActionsBySchedule,
   saveDoseAction,
   deleteDoseAction,
   deleteDoseActionsBySchedule,
   getAllMedications,
-  saveHiddenDoseInstance,
-  getHiddenDoseInstanceIds,
 } from '../db'
-
-function shouldGenerateForDate(s: DoseSchedule, dateStr: string): boolean {
-  const d = new Date(dateStr + 'T12:00:00')
-  switch (s.frequencyType) {
-    case 'daily':
-      return true
-    case 'specific_days':
-      return s.frequencyConfig.days?.includes(d.getDay()) ?? false
-    case 'every_x_days': {
-      const start = new Date(s.startDate + 'T12:00:00')
-      const diff = Math.floor((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-      return diff % (s.frequencyConfig.interval || 1) === 0
-    }
-    case 'every_x_weeks': {
-      const start = new Date(s.startDate + 'T12:00:00')
-      const diff = Math.floor((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 7))
-      return diff % (s.frequencyConfig.interval || 1) === 0
-    }
-    case 'every_x_months': {
-      const start = new Date(s.startDate + 'T12:00:00')
-      const diff = (d.getFullYear() - start.getFullYear()) * 12 + d.getMonth() - start.getMonth()
-      return diff % (s.frequencyConfig.interval || 1) === 0
-    }
-    case 'as_needed':
-      return false
-  }
-}
-
-function generateInstanceId(scheduleId: string, date: string, time: string, label: string): string {
-  return `${scheduleId}|${date}|${time}|${label}`
-}
 
 interface DoseScheduleState {
   doseSchedules: DoseSchedule[]
@@ -62,7 +32,8 @@ interface DoseScheduleState {
     doseLabel: string,
     status: 'taken' | 'skipped' | 'cancelled'
   ) => Promise<void>
-  hideDosePermanently: (instanceId: string) => Promise<void>
+  deleteFutureDoses: (instanceId: string, scheduleId: string, scheduledDate: string, doseLabel: string, scheduledTime: string) => Promise<void>
+  deleteDoseSlot: (instanceId: string, scheduleId: string, doseLabel: string, scheduledTime: string) => Promise<void>
 }
 
 export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
@@ -73,11 +44,10 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
     set({ doseSchedules: schedules })
   },
   loadDosesForDate: async (date) => {
-    const [schedules, actions, medications, hiddenIds] = await Promise.all([
+    const [schedules, actions, medications] = await Promise.all([
       getActiveSchedulesForDate(date),
       getDoseActionsByDate(date),
       getAllMedications(),
-      getHiddenDoseInstanceIds(),
     ])
 
     const actionMap = new Map<string, DoseAction>()
@@ -93,8 +63,8 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
       const med = medMap.get(s.medicationId)
       for (const dose of s.doses) {
         const instanceId = generateInstanceId(s.id, date, dose.time, dose.label)
-        if (hiddenIds.has(instanceId)) continue
         const action = actionMap.get(instanceId)
+        if (action?.status === 'deleted') continue
         result.push({
           id: instanceId,
           scheduleId: s.id,
@@ -152,13 +122,65 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
       ),
     }))
   },
-  hideDosePermanently: async (instanceId) => {
-    await Promise.all([
-      saveHiddenDoseInstance(instanceId),
-      deleteDoseAction(instanceId),
-    ])
-    set((state) => ({
-      doses: state.doses.filter((d) => d.id !== instanceId),
-    }))
+  deleteFutureDoses: async (instanceId, scheduleId, scheduledDate, doseLabel, scheduledTime) => {
+    const s = await getDoseSchedule(scheduleId)
+    if (!s) return
+
+    // Clean up orphaned DoseActions for this dose label + time
+    const actions = await getDoseActionsBySchedule(scheduleId)
+    for (const a of actions) {
+      if (a.doseLabel === doseLabel && a.scheduledTime === scheduledTime) await deleteDoseAction(a.id)
+    }
+
+    // Calculate day before the current dose's date
+    const d = new Date(scheduledDate + 'T12:00:00')
+    d.setDate(d.getDate() - 1)
+    const newEnd = d.toISOString().split('T')[0]
+
+    // Remove this specific dose time from schedule (match by label + time)
+    const remaining = s.doses.filter((d) => d.label !== doseLabel || d.time !== scheduledTime)
+    const updated = { ...s, doses: remaining, endDate: newEnd, updatedAt: new Date().toISOString() }
+
+    if (remaining.length === 0) {
+      await deleteDoseSchedule(scheduleId)
+      set((state) => ({
+        doseSchedules: state.doseSchedules.filter((x) => x.id !== scheduleId),
+        doses: state.doses.filter((d) => d.scheduleId !== scheduleId),
+      }))
+    } else {
+      await saveDoseSchedule(updated)
+      set((state) => ({
+        doseSchedules: state.doseSchedules.map((x) => (x.id === scheduleId ? updated : x)),
+        doses: state.doses.filter((d) => d.id !== instanceId),
+      }))
+    }
+  },
+  deleteDoseSlot: async (instanceId, scheduleId, doseLabel, scheduledTime) => {
+    const s = await getDoseSchedule(scheduleId)
+    if (!s) return
+
+    // Clean up orphaned DoseActions for this dose label + time
+    const actions = await getDoseActionsBySchedule(scheduleId)
+    for (const a of actions) {
+      if (a.doseLabel === doseLabel && a.scheduledTime === scheduledTime) await deleteDoseAction(a.id)
+    }
+
+    // Remove this specific dose time from schedule (match by label + time)
+    const remaining = s.doses.filter((d) => d.label !== doseLabel || d.time !== scheduledTime)
+
+    if (remaining.length === 0) {
+      await deleteDoseSchedule(scheduleId)
+      set((state) => ({
+        doseSchedules: state.doseSchedules.filter((x) => x.id !== scheduleId),
+        doses: state.doses.filter((d) => d.scheduleId !== scheduleId),
+      }))
+    } else {
+      const updated = { ...s, doses: remaining, updatedAt: new Date().toISOString() }
+      await saveDoseSchedule(updated)
+      set((state) => ({
+        doseSchedules: state.doseSchedules.map((x) => (x.id === scheduleId ? updated : x)),
+        doses: state.doses.filter((d) => d.id !== instanceId),
+      }))
+    }
   },
 }))
