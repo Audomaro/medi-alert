@@ -2,7 +2,7 @@ export type Presentation = 'pastilla' | 'capsula' | 'tableta' | 'inyeccion' | 's
 
 export type FrequencyType = 'daily' | 'specific_days' | 'every_x_days' | 'every_x_weeks' | 'every_x_months' | 'as_needed'
 
-export type DoseStatus = 'pending' | 'taken' | 'skipped' | 'cancelled'
+export type DoseStatus = 'pending' | 'taken' | 'skipped' | 'cancelled' | 'deleted'
 
 export interface FrequencyConfig {
   timesPerDay?: number
