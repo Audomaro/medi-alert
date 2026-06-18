@@ -16,6 +16,12 @@ import {
   getAllMedications,
 } from '../db'
 
+function notifySWReschedule(): void {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'RESCHEDULE' })
+  }
+}
+
 interface DoseScheduleState {
   doseSchedules: DoseSchedule[]
   doses: DoseWithDetails[]
@@ -75,6 +81,7 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
     const instances = generateDoseInstances(s)
     await saveDoseInstances(instances)
     set((state) => ({ doseSchedules: [...state.doseSchedules, s] }))
+    notifySWReschedule()
   },
   update: async (s) => {
     await deleteDoseInstancesBySchedule(s.id)
@@ -84,6 +91,7 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
     set((state) => ({
       doseSchedules: state.doseSchedules.map((x) => (x.id === s.id ? s : x)),
     }))
+    notifySWReschedule()
   },
   remove: async (id) => {
     await deleteDoseInstancesBySchedule(id)
@@ -92,6 +100,7 @@ export const useDoseScheduleStore = create<DoseScheduleState>((set) => ({
       doseSchedules: state.doseSchedules.filter((x) => x.id !== id),
       doses: state.doses.filter((d) => d.scheduleId !== id),
     }))
+    notifySWReschedule()
   },
   updateDoseStatus: async (instanceId, status) => {
     const instance = await getDoseInstance(instanceId)
