@@ -170,7 +170,7 @@ export function HomePage() {
                 }}
                 className="w-full py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium cursor-pointer hover:bg-red-600 transition-colors"
               >
-                Todas las fechas
+                Todas
               </button>
               <button
                 onClick={() => setDeletingDose(null)}
