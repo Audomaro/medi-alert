@@ -8,7 +8,7 @@ function makeSchedule(overrides: Partial<DoseSchedule> = {}): DoseSchedule {
     medicationId: 'med-1',
     frequencyType: 'daily',
     frequencyConfig: {},
-    doses: [{ label: 'Dosis #1', time: '08:00', doseValue: 500, doseUnit: 'mg' }],
+    doseDefinitions: [{ label: 'Dosis #1', time: '08:00', doseValue: 500, doseUnit: 'mg' }],
     startDate: '2026-06-01',
     endDate: '2026-06-30',
     active: true,

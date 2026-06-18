@@ -6,6 +6,7 @@ const config: Record<DoseStatus, { label: string; icon: typeof Clock; classes: s
   taken: { label: 'Tomada', icon: CheckCircle, classes: 'bg-success-bg text-success-text' },
   skipped: { label: 'Saltada', icon: XCircle, classes: 'bg-danger-bg text-danger-text' },
   cancelled: { label: 'Cancelada', icon: Ban, classes: 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300' },
+  deleted: { label: 'Eliminada', icon: XCircle, classes: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
 }
 
 export function StatusBadge({ status }: { status: DoseStatus }) {

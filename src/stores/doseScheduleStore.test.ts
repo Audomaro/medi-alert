@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { DoseSchedule, Medication, DoseInstance } from '../types'
 import { useDoseScheduleStore } from './doseScheduleStore'
 import {
-  getAllDoseSchedules,
-  getDoseSchedule,
   saveDoseSchedule,
   deleteDoseSchedule,
   getActiveSchedulesForDate,
@@ -47,8 +45,7 @@ vi.mock('../utils/generateInstances', () => ({
   }),
 }))
 
-const mockedGetAllDoseSchedules = vi.mocked(getAllDoseSchedules)
-const mockedGetDoseSchedule = vi.mocked(getDoseSchedule)
+
 const mockedSaveDoseSchedule = vi.mocked(saveDoseSchedule)
 const mockedDeleteDoseSchedule = vi.mocked(deleteDoseSchedule)
 const mockedGetActiveSchedulesForDate = vi.mocked(getActiveSchedulesForDate)
@@ -147,7 +144,6 @@ describe('doseScheduleStore - deleteFutureDoses (Esta y futuras)', () => {
   })
 
   it('deletes future instances matching label+time, keeps past and other doses', async () => {
-    const schedule = makeSchedule()
     const allInstances: DoseInstance[] = [
       { id: 'sched-1|2026-06-14|08:00|Mañana', scheduleId: 'sched-1', medicationId: 'med-1', scheduledDate: '2026-06-14', scheduledTime: '08:00', doseLabel: 'Mañana', doseValue: 500, doseUnit: 'mg', status: 'pending', createdAt: '', updatedAt: '' },
       { id: 'sched-1|2026-06-15|08:00|Mañana', scheduleId: 'sched-1', medicationId: 'med-1', scheduledDate: '2026-06-15', scheduledTime: '08:00', doseLabel: 'Mañana', doseValue: 500, doseUnit: 'mg', status: 'pending', createdAt: '', updatedAt: '' },
@@ -201,7 +197,6 @@ describe('doseScheduleStore - loadDosesForDate', () => {
   })
 
   it('excludes instances from inactive schedules', async () => {
-    const schedule = makeSchedule({ active: false })
     mockedGetActiveSchedulesForDate.mockResolvedValue([])
     mockedGetDoseInstancesByDate.mockResolvedValue([
       { id: 'sched-1|2026-06-15|08:00|Mañana', scheduleId: 'sched-1', medicationId: 'med-1', scheduledDate: '2026-06-15', scheduledTime: '08:00', doseLabel: 'Mañana', doseValue: 500, doseUnit: 'mg', status: 'pending', createdAt: '', updatedAt: '' },
