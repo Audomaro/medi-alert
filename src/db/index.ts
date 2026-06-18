@@ -1,8 +1,8 @@
 import { openDB, type IDBPDatabase } from 'idb'
-import type { Medication, DoseSchedule, DoseAction } from '../types'
+import type { Medication, DoseSchedule, DoseInstance } from '../types'
 
 const DB_NAME = 'medi-alert'
-const DB_VERSION = 7
+const DB_VERSION = 8
 
 let dbPromise: Promise<IDBPDatabase> | null = null
 
@@ -92,6 +92,34 @@ function getDB() {
             db.deleteObjectStore('hidden_dose_instances')
           }
         }
+        if (_oldVersion < 8) {
+          const instanceStore = db.createObjectStore('dose_instances', { keyPath: 'id' })
+          instanceStore.createIndex('date', 'scheduledDate')
+          instanceStore.createIndex('schedule', 'scheduleId')
+
+          // Migrate existing DoseActions to DoseInstances
+          if (db.objectStoreNames.contains('dose_actions')) {
+            const actionStore = transaction.objectStore('dose_actions')
+            const actions = await actionStore.getAll()
+            for (const a of actions) {
+              await instanceStore.put({
+                id: a.id,
+                scheduleId: a.scheduleId,
+                medicationId: a.medicationId,
+                scheduledDate: a.scheduledDate,
+                scheduledTime: a.scheduledTime,
+                doseLabel: a.doseLabel,
+                doseValue: 0,
+                doseUnit: '',
+                status: a.status,
+                takenAt: a.takenAt,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              })
+            }
+            db.deleteObjectStore('dose_actions')
+          }
+        }
       },
     })
   }
@@ -146,43 +174,52 @@ export async function deleteAllData(): Promise<void> {
   await tx.done
 }
 
-export async function getDoseActionsByDate(date: string): Promise<DoseAction[]> {
-  const db = await getDB()
-  return db.getAllFromIndex('dose_actions', 'date', date)
-}
-
-export async function saveDoseAction(action: DoseAction): Promise<void> {
-  const db = await getDB()
-  await db.put('dose_actions', action)
-}
-
-export async function deleteDoseAction(id: string): Promise<void> {
-  const db = await getDB()
-  await db.delete('dose_actions', id)
-}
-
-export async function deleteDoseActionsBySchedule(scheduleId: string): Promise<void> {
-  const db = await getDB()
-  const actions = await db.getAllFromIndex('dose_actions', 'schedule', scheduleId)
-  const tx = db.transaction('dose_actions', 'readwrite')
-  for (const a of actions) {
-    tx.store.delete(a.id)
-  }
-  await tx.done
-}
-
 export async function getActiveSchedulesForDate(date: string): Promise<DoseSchedule[]> {
   const db = await getDB()
   const all = await db.getAll('dose_schedules')
   return all.filter((s) => s.active && s.startDate <= date && s.endDate >= date)
 }
 
-export async function getDoseAction(id: string): Promise<DoseAction | undefined> {
+export async function getDoseInstancesByDate(date: string): Promise<DoseInstance[]> {
   const db = await getDB()
-  return db.get('dose_actions', id)
+  return db.getAllFromIndex('dose_instances', 'date', date)
 }
 
-export async function getDoseActionsBySchedule(scheduleId: string): Promise<DoseAction[]> {
+export async function getDoseInstancesBySchedule(scheduleId: string): Promise<DoseInstance[]> {
   const db = await getDB()
-  return db.getAllFromIndex('dose_actions', 'schedule', scheduleId)
+  return db.getAllFromIndex('dose_instances', 'schedule', scheduleId)
+}
+
+export async function getDoseInstance(id: string): Promise<DoseInstance | undefined> {
+  const db = await getDB()
+  return db.get('dose_instances', id)
+}
+
+export async function saveDoseInstance(instance: DoseInstance): Promise<void> {
+  const db = await getDB()
+  await db.put('dose_instances', instance)
+}
+
+export async function saveDoseInstances(instances: DoseInstance[]): Promise<void> {
+  const db = await getDB()
+  const tx = db.transaction('dose_instances', 'readwrite')
+  for (const i of instances) {
+    tx.store.put(i)
+  }
+  await tx.done
+}
+
+export async function deleteDoseInstance(id: string): Promise<void> {
+  const db = await getDB()
+  await db.delete('dose_instances', id)
+}
+
+export async function deleteDoseInstancesBySchedule(scheduleId: string): Promise<void> {
+  const db = await getDB()
+  const instances = await db.getAllFromIndex('dose_instances', 'schedule', scheduleId)
+  const tx = db.transaction('dose_instances', 'readwrite')
+  for (const i of instances) {
+    tx.store.delete(i.id)
+  }
+  await tx.done
 }
