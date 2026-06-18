@@ -1,10 +1,38 @@
-/// <reference lib="WebWorker" />
-
 import { openDB } from 'idb'
-import type { DoseInstance, Medication } from '../types'
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision: string | null }>
+}
+
+interface PeriodicSyncEvent extends Event {
+  readonly tag: string
+  waitUntil(f: Promise<unknown>): void
+}
+
+type DoseStatus = 'pending' | 'taken' | 'skipped' | 'cancelled' | 'deleted'
+
+interface InlineDoseInstance {
+  id: string
+  scheduleId: string
+  medicationId: string
+  scheduledDate: string
+  scheduledTime: string
+  doseLabel: string
+  doseValue: number
+  doseUnit: string
+  status: DoseStatus
+  takenAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface InlineMedication {
+  id: string
+  name: string
+  doseValue: number
+  doseUnit: string
+  icon?: string
+  color?: string
 }
 
 const CACHE = 'medi-alert-v1'
@@ -24,7 +52,7 @@ function minutesNow(): number {
   return n.getHours() * 60 + n.getMinutes()
 }
 
-async function getPendingDosesToday(): Promise<DoseInstance[]> {
+async function getPendingDosesToday(): Promise<InlineDoseInstance[]> {
   try {
     const db = await openDB(DB_NAME)
     const all = await db.getAllFromIndex('dose_instances', 'date', todayISO())
@@ -34,7 +62,7 @@ async function getPendingDosesToday(): Promise<DoseInstance[]> {
   }
 }
 
-async function getMedication(id: string): Promise<Medication | undefined> {
+async function getMedication(id: string): Promise<InlineMedication | undefined> {
   try {
     const db = await openDB(DB_NAME)
     return db.get('medications', id)
@@ -43,7 +71,7 @@ async function getMedication(id: string): Promise<Medication | undefined> {
   }
 }
 
-async function updateDoseStatus(id: string, status: DoseInstance['status']): Promise<void> {
+async function updateDoseStatus(id: string, status: InlineDoseInstance['status']): Promise<void> {
   try {
     const db = await openDB(DB_NAME)
     const instance = await db.get('dose_instances', id)
@@ -68,7 +96,7 @@ function clearAllTimers(): void {
   timers.clear()
 }
 
-async function showDoseNotification(instance: DoseInstance, medName: string): Promise<void> {
+async function showDoseNotification(instance: InlineDoseInstance, medName: string): Promise<void> {
   const { id, scheduledTime, doseValue, doseUnit } = instance
   await self.registration.showNotification(`Medi-alert — ${medName}`, {
     body: `${doseValue}${doseUnit} — programada para las ${scheduledTime}`,
@@ -80,10 +108,10 @@ async function showDoseNotification(instance: DoseInstance, medName: string): Pr
       { action: 'cancelled', title: 'Cancelar' },
     ],
     data: { doseId: id, scheduledDate: instance.scheduledDate, scheduledTime },
-  })
+  } as any)
 }
 
-async function notifyDose(instance: DoseInstance): Promise<void> {
+async function notifyDose(instance: InlineDoseInstance): Promise<void> {
   if (notifiedDoses.has(instance.id)) return
   notifiedDoses.add(instance.id)
   const med = await getMedication(instance.medicationId)
@@ -152,9 +180,10 @@ async function checkMissedDoses(): Promise<void> {
   }
 }
 
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'dose-check') {
-    event.waitUntil(checkMissedDoses())
+self.addEventListener('periodicsync', (event: Event) => {
+  const e = event as PeriodicSyncEvent
+  if (e.tag === 'dose-check') {
+    e.waitUntil(checkMissedDoses())
   }
 })
 
