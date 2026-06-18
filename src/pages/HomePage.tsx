@@ -38,11 +38,11 @@ export function HomePage() {
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.data?.type !== 'DOSE_ACTION') return
-      const { action, doseId, scheduleId, medicationId, scheduledDate, scheduledTime, doseLabel } = event.data
+      const { action, doseId } = event.data
       if (action === 'delete') {
-        deleteDoseSlot(doseId, scheduleId, medicationId, scheduledDate, doseLabel, scheduledTime)
+        deleteDoseSlot(doseId)
       } else {
-        updateDoseStatus(doseId, scheduleId, medicationId, scheduledDate, scheduledTime, doseLabel, action)
+        updateDoseStatus(doseId, action)
       }
     }
     navigator.serviceWorker.addEventListener('message', handler)
@@ -124,9 +124,9 @@ export function HomePage() {
             icon={dose.medicationIcon}
             status={dose.status}
             color={dose.medicationColor}
-            onMarkTaken={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'taken')}
-            onMarkSkipped={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'skipped')}
-            onMarkCancelled={() => updateDoseStatus(dose.id, dose.scheduleId, dose.medicationId, dose.scheduledDate, dose.scheduledTime, dose.doseLabel, 'cancelled')}
+            onMarkTaken={() => updateDoseStatus(dose.id, 'taken')}
+            onMarkSkipped={() => updateDoseStatus(dose.id, 'skipped')}
+            onMarkCancelled={() => updateDoseStatus(dose.id, 'cancelled')}
             onDelete={() => setDeletingDose(dose)}
           />
         ))}
@@ -147,7 +147,7 @@ export function HomePage() {
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => {
-                  deleteDoseSlot(deletingDose.id, deletingDose.scheduleId, deletingDose.medicationId, deletingDose.scheduledDate, deletingDose.doseLabel, deletingDose.scheduledTime)
+                  deleteDoseSlot(deletingDose.id)
                   setDeletingDose(null)
                 }}
                 className="w-full py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-text dark:text-white text-sm font-medium cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -156,7 +156,7 @@ export function HomePage() {
               </button>
               <button
                 onClick={() => {
-                  deleteFutureDoses(deletingDose.id, deletingDose.scheduleId, deletingDose.scheduledDate, deletingDose.doseLabel, deletingDose.scheduledTime)
+                  deleteFutureDoses(deletingDose.scheduleId, deletingDose.scheduledDate, deletingDose.doseLabel, deletingDose.scheduledTime)
                   setDeletingDose(null)
                 }}
                 className="w-full py-2.5 rounded-xl bg-orange-500 text-white text-sm font-medium cursor-pointer hover:bg-orange-600 transition-colors"
