@@ -1,8 +1,9 @@
 import { openDB, type IDBPDatabase } from 'idb'
 import type { Medication, DoseSchedule, DoseInstance } from '../types'
+import { generateDoseInstances } from '../utils/generateInstances'
 
 const DB_NAME = 'medi-alert'
-const DB_VERSION = 8
+const DB_VERSION = 9
 
 let dbPromise: Promise<IDBPDatabase> | null = null
 
@@ -118,6 +119,22 @@ function getDB() {
               })
             }
             db.deleteObjectStore('dose_actions')
+          }
+        }
+        if (_oldVersion < 9) {
+          // Reset dose_instances — clean slate, regenerate from schedules
+          db.deleteObjectStore('dose_instances')
+          const newStore = db.createObjectStore('dose_instances', { keyPath: 'id' })
+          newStore.createIndex('date', 'scheduledDate')
+          newStore.createIndex('schedule', 'scheduleId')
+
+          const schedStore = transaction.objectStore('dose_schedules')
+          const schedules = await schedStore.getAll()
+          for (const s of schedules) {
+            const instances = generateDoseInstances(s)
+            for (const inst of instances) {
+              await newStore.put(inst)
+            }
           }
         }
       },
