@@ -3,6 +3,7 @@ import { Bell, Palette, Info, Trash2 } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
 import { useMedicationStore } from '../stores/medicationStore'
 import { useDoseScheduleStore } from '../stores/doseScheduleStore'
+import packageJson from '../../package.json'
 import { todayISO } from '../utils/date'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 
@@ -60,7 +61,7 @@ export function MorePage() {
             </div>
             <div className="flex-1">
               <div className="font-medium text-text dark:text-white text-sm">Versión</div>
-              <div className="text-xs text-gray-400">1.0.0</div>
+              <div className="text-xs text-gray-400">{packageJson.version}</div>
             </div>
           </div>
         </div>
