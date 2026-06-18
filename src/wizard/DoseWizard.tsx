@@ -5,7 +5,7 @@ import { useMedicationStore } from '../stores/medicationStore'
 import { useDoseScheduleStore } from '../stores/doseScheduleStore'
 import { generateId } from '../utils/id'
 import { todayISO } from '../utils/date'
-import type { Medication, FrequencyType, Dose } from '../types'
+import type { Medication, FrequencyType, DoseDefinition } from '../types'
 
 type Step = 1 | 2 | 3
 
@@ -38,7 +38,7 @@ export function DoseWizard() {
   const [timesPerDay, setTimesPerDay] = useState(1)
   const [specificDays, setSpecificDays] = useState<number[]>([])
   const [intervalValue, setIntervalValue] = useState(1)
-  const [doses, setDoses] = useState<Dose[]>([{ label: 'Dosis #1', time: '08:00', doseValue: 0, doseUnit: '' }])
+  const [doses, setDoses] = useState<DoseDefinition[]>([{ label: 'Dosis #1', time: '08:00', doseValue: 0, doseUnit: '' }])
 
   // Step 3 state
   const [startDate, setStartDate] = useState(todayISO())
@@ -60,7 +60,7 @@ export function DoseWizard() {
     setTimesPerDay(s.frequencyConfig.timesPerDay || 1)
     setSpecificDays(s.frequencyConfig.days || [])
     setIntervalValue(s.frequencyConfig.interval || 1)
-    setDoses(s.doses)
+    setDoses(s.doseDefinitions)
     setStartDate(s.startDate)
     setEndDate(s.endDate)
   }, [isEditing, id, doseSchedules, medications])
@@ -91,7 +91,7 @@ export function DoseWizard() {
       medicationId: selectedMed.id,
       frequencyType,
       frequencyConfig: { timesPerDay, days: specificDays, interval: intervalValue },
-      doses: doses.map((d) => ({ ...d, doseValue: dv, doseUnit: du })),
+      doseDefinitions: doses.map((d) => ({ ...d, doseValue: dv, doseUnit: du })),
       startDate,
       endDate,
       active: true,
