@@ -10,7 +10,7 @@ export interface FrequencyConfig {
   interval?: number
 }
 
-export interface Dose {
+export interface DoseDefinition {
   label: string
   time: string
   doseValue: number
@@ -34,7 +34,7 @@ export interface DoseSchedule {
   medicationId: string
   frequencyType: FrequencyType
   frequencyConfig: FrequencyConfig
-  doses: Dose[]
+  doseDefinitions: DoseDefinition[]
   startDate: string
   endDate: string
   active: boolean
@@ -42,15 +42,19 @@ export interface DoseSchedule {
   updatedAt: string
 }
 
-export interface DoseAction {
+export interface DoseInstance {
   id: string
   scheduleId: string
   medicationId: string
   scheduledDate: string
   scheduledTime: string
   doseLabel: string
-  status: 'taken' | 'skipped' | 'cancelled'
+  doseValue: number
+  doseUnit: string
+  status: DoseStatus
   takenAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface DoseWithDetails {
