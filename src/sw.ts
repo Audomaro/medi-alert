@@ -38,6 +38,15 @@ interface InlineMedication {
 const CACHE = 'medi-alert-v1'
 const DB_NAME = 'medi-alert'
 
+async function dbExists(): Promise<boolean> {
+  try {
+    const dbs = await indexedDB.databases()
+    return dbs.some((db) => db.name === DB_NAME)
+  } catch {
+    return false
+  }
+}
+
 function todayISO(): string {
   return new Date().toISOString().split('T')[0]
 }
@@ -54,6 +63,7 @@ function minutesNow(): number {
 
 async function getPendingDosesToday(): Promise<InlineDoseInstance[]> {
   try {
+    if (!(await dbExists())) return []
     const db = await openDB(DB_NAME)
     const all = await db.getAllFromIndex('dose_instances', 'date', todayISO())
     return all.filter((d) => d.status === 'pending')
@@ -64,6 +74,7 @@ async function getPendingDosesToday(): Promise<InlineDoseInstance[]> {
 
 async function getMedication(id: string): Promise<InlineMedication | undefined> {
   try {
+    if (!(await dbExists())) return undefined
     const db = await openDB(DB_NAME)
     return db.get('medications', id)
   } catch {
@@ -73,6 +84,7 @@ async function getMedication(id: string): Promise<InlineMedication | undefined> 
 
 async function updateDoseStatus(id: string, status: InlineDoseInstance['status']): Promise<void> {
   try {
+    if (!(await dbExists())) return
     const db = await openDB(DB_NAME)
     const instance = await db.get('dose_instances', id)
     if (!instance) return

@@ -11,6 +11,15 @@ function getDB() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
       upgrade: async (db, _oldVersion, _newVersion, transaction) => {
+        if (_oldVersion >= 1 && !db.objectStoreNames.contains('medications')) {
+          db.createObjectStore('medications', { keyPath: 'id' })
+          db.createObjectStore('treatments', { keyPath: 'id' })
+          db.createObjectStore('dose_schedules', { keyPath: 'id' })
+          const store = db.createObjectStore('dose_instances', { keyPath: 'id' })
+          store.createIndex('date', 'scheduledDate')
+          store.createIndex('schedule', 'scheduleId')
+          return
+        }
         if (_oldVersion < 1) {
           db.createObjectStore('medications', { keyPath: 'id' })
           db.createObjectStore('treatments', { keyPath: 'id' })
