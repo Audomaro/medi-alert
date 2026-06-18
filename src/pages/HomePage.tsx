@@ -78,7 +78,7 @@ export function HomePage() {
                 scheduledTime: dose.scheduledTime,
                 doseLabel: dose.doseLabel,
               },
-            })
+            } as any)
           })
         }
       }
