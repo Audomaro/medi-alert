@@ -23,10 +23,22 @@ export function HomePage() {
 
   const pendingCount = doses.filter((d) => d.status === 'pending').length
 
+  async function registerPeriodicSync() {
+    try {
+      const reg = await navigator.serviceWorker.ready
+      if ('periodicSync' in reg) {
+        await (reg as any).periodicSync.register('dose-check', { minInterval: 15 * 60 * 1000 })
+      }
+    } catch {
+      // Periodic Sync not supported — timer scheduling still works while SW is alive
+    }
+  }
+
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
+    registerPeriodicSync()
   }, [])
 
   useEffect(() => {
